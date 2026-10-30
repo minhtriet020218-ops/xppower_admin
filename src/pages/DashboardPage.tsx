@@ -1,50 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
-import { type DashboardStatsDTO, DashboardStatsDTOBuilder } from '../dtos/DashboardDTO';
+import type { DashboardStatsDTO } from '../dtos/DashboardDTO';
+import { Header } from '../components/layout/Header';
+import { DashboardService } from '../services/DashboardService';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
-export const DashboardPage: React.FC = () => {
+interface DashboardPageProps {
+  onLogout?: () => void;
+}
+
+export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   const [data, setData] = useState<DashboardStatsDTO | null>(null);
 
   useEffect(() => {
-    // Giả lập load dữ liệu sử dụng DTO Builder
-    const mockData = new DashboardStatsDTOBuilder()
-      .setTotals(2198, 2112, 70, 15)
-      .setDepartmentDistribution([
-        { name: 'PS Production', count: 558 },
-        { name: 'Không xác định', count: 328 },
-        { name: 'ENG-PS-IDL', count: 261 },
-        { name: 'IE-IDL', count: 180 },
-        { name: 'NPI-IDL', count: 100 },
-        { name: 'PMC', count: 88 },
-        { name: 'PP/Cable-PS Off', count: 61 }
-      ])
-      .setStatusDistribution([
-        { status: 'In Stock', count: 180 },
-        { status: 'In Use', count: 1635 },
-        { status: 'Damaged', count: 45 },
-        { status: 'Không xác định', count: 465 },
-        { status: 'Write off', count: 20 },
-        { status: 'Retired', count: 15 },
-        { status: 'Backup', count: 10 }
-      ])
-      .setTypeDistribution([
-        { type: 'Laptop', count: 611 },
-        { type: 'Monitor', count: 822 },
-        { type: 'Network Device', count: 369 },
-        { type: 'Desktop', count: 100 },
-        { type: 'Scanner', count: 45 }
-      ])
-      .build();
-
-    setData(mockData);
+    DashboardService.getStats()
+      .then((res) => setData(res))
+      .catch((err) => console.error("Lỗi tải thống kê:", err));
   }, []);
 
-  if (!data) return <div>Loading...</div>;
+  if (!data) {
+    return (
+      <div className="d-flex justify-content-center align-items-center min-vh-100 bg-light">
+        <div className="spinner-border text-success" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
-  // Chart configs
   const barData = {
     labels: data.departmentDistribution.map(d => d.name),
     datasets: [{
@@ -64,80 +49,92 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#F3F4F6', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      {/* Top Header Navigation */}
-      <header style={{ backgroundColor: '#fff', padding: '10px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div style={{ backgroundColor: '#000', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>XP IT</div>
-          <span style={{ fontWeight: 'bold', fontSize: '18px' }}>Asset Management</span>
-          <nav style={{ marginLeft: '20px', display: 'flex', gap: '15px', fontSize: '13px', color: '#4B5563' }}>
-            <span style={{ backgroundColor: '#E5E7EB', padding: '5px 12px', borderRadius: '15px', fontWeight: 'bold' }}>Trang chủ</span>
-            <span style={{ padding: '5px 10px', cursor: 'pointer' }}>Quản Lý Tài sản</span>
-            <span style={{ padding: '5px 10px', cursor: 'pointer' }}>🏛 Bộ phận</span>
-            <span style={{ padding: '5px 10px', cursor: 'pointer' }}>Trang cá nhân</span>
-            <span style={{ padding: '5px 10px', cursor: 'pointer' }}>Cài Đặt</span>
-          </nav>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div style={{ fontSize: '12px', textAlign: 'right' }}>
-            <div style={{ fontWeight: 'bold' }}>VN2612246</div>
-            <div style={{ color: '#6B7280' }}>Admin</div>
-          </div>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#8B5CF6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>V</div>
-        </div>
-      </header>
+    <div className="bg-light min-vh-100 font-sans">
+      {/* Header component có gắn Dropdown và Đăng xuất */}
+      <Header onLogout={onLogout} />
 
-      {/* Main Content Area */}
-      <main style={{ padding: '20px 40px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1F2937' }}>📊 Dashboard Tổng Quan</h2>
-          <p style={{ fontSize: '12px', color: '#6B7280' }}>Thống kê tài sản IT theo bộ phận, trạng thái và loại thiết bị</p>
+      {/* Main Content */}
+      <main className="container-fluid px-4 py-4">
+        <div className="text-center mb-4">
+          <h2 className="fs-4 fw-bold text-dark">📊 Dashboard Tổng Quan</h2>
+          <p className="text-muted small">Thống kê tài sản IT theo bộ phận, trạng thái và loại thiết bị</p>
         </div>
 
         {/* Charts Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-          {/* Horizontal Bar Chart Card */}
-          <div style={{ backgroundColor: '#fff', borderRadius: '8px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <h3 style={{ fontSize: '14px', textAlign: 'center', marginBottom: '15px' }}>📊 Bộ phận được cấp</h3>
-            <div style={{ height: '350px' }}>
-              <Bar data={barData} options={{ indexAxis: 'y', responsive: true, maintainAspectRatio: false }} />
+        <div className="row g-4 mb-4">
+          {/* Horizontal Bar Chart Card với chiều cao động và thanh cuộn */}
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100 p-3">
+              <h3 className="fs-6 text-center mb-3 fw-bold text-secondary">📊 Bộ phận được cấp ({data.departmentDistribution.length} bộ phận)</h3>
+              
+              {/* Khung chứa có thanh cuộn dọc khi danh sách dài */}
+              <div 
+                style={{ 
+                  maxHeight: '720px', 
+                  overflowY: 'auto', 
+                  overflowX: 'hidden',
+                  paddingRight: '10px' 
+                }}
+              >
+                {/* Tính chiều cao động: mỗi bộ phận nhân thêm ~25px để không bị dính chữ */}
+                <div style={{ height: `${Math.max(350, data.departmentDistribution.length * 25)}px` }}>
+                  <Bar 
+                    data={barData} 
+                    options={{ 
+                      indexAxis: 'y', 
+                      responsive: true, 
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false }
+                      }
+                    }} 
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Right Pie/Donut Charts Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ backgroundColor: '#fff', borderRadius: '8px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', flex: 1 }}>
-              <h3 style={{ fontSize: '14px', textAlign: 'center', marginBottom: '10px' }}>📈 Trạng thái tài sản</h3>
-              <div style={{ height: '180px', display: 'flex', justifyContent: 'center' }}>
+          <div className="col-12 col-lg-6 d-flex flex-column gap-4">
+            <div className="card border-0 shadow-sm p-3">
+              <h3 className="fs-6 text-center mb-2 fw-bold text-secondary">📈 Trạng thái tài sản</h3>
+              <div style={{ height: '360px' }} className="d-flex justify-content-center">
                 <Doughnut data={statusData} options={{ maintainAspectRatio: false }} />
               </div>
             </div>
-            <div style={{ backgroundColor: '#fff', borderRadius: '8px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', flex: 1 }}>
-              <h3 style={{ fontSize: '14px', textAlign: 'center', marginBottom: '10px' }}>🔧 Loại thiết bị</h3>
-              <div style={{ height: '180px', display: 'flex', justifyContent: 'center' }}>
+            <div className="card border-0 shadow-sm p-3">
+              <h3 className="fs-6 text-center mb-2 fw-bold text-secondary">🔧 Loại thiết bị</h3>
+              <div style={{ height: '360px' }} className="d-flex justify-content-center">
                 <Doughnut data={statusData} options={{ maintainAspectRatio: false }} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Metric Cards Bottom */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
-          <div style={{ backgroundColor: '#E0F2FE', border: '1px solid #7DD3FC', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#0284C7' }}>{data.totalAssets}</div>
-            <div style={{ fontSize: '12px', color: '#0369A1' }}>Tổng tài sản</div>
+        {/* Metric Cards */}
+        <div className="row g-3">
+          <div className="col-12 col-sm-6 col-xl-3">
+            <div className="card border border-info bg-info-subtle text-center p-3 shadow-sm">
+              <div className="fs-3 fw-bold text-info-emphasis">{data.totalAssets}</div>
+              <div className="small text-info-emphasis fw-semibold">Tổng tài sản</div>
+            </div>
           </div>
-          <div style={{ backgroundColor: '#DCFCE7', border: '1px solid #86EFAC', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#16A34A' }}>{data.activeAssets}</div>
-            <div style={{ fontSize: '12px', color: '#15803D' }}>Tài sản hoạt động</div>
+          <div className="col-12 col-sm-6 col-xl-3">
+            <div className="card border border-success bg-success-subtle text-center p-3 shadow-sm">
+              <div className="fs-3 fw-bold text-success-emphasis">{data.activeAssets}</div>
+              <div className="small text-success-emphasis fw-semibold">Tài sản hoạt động</div>
+            </div>
           </div>
-          <div style={{ backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#D97706' }}>{data.departmentsCount}</div>
-            <div style={{ fontSize: '12px', color: '#B45309' }}>Bộ phận</div>
+          <div className="col-12 col-sm-6 col-xl-3">
+            <div className="card border border-warning bg-warning-subtle text-center p-3 shadow-sm">
+              <div className="fs-3 fw-bold text-warning-emphasis">{data.departmentsCount}</div>
+              <div className="small text-warning-emphasis fw-semibold">Bộ phận</div>
+            </div>
           </div>
-          <div style={{ backgroundColor: '#FCE7F3', border: '1px solid #FBCFE8', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#DB2777' }}>{data.deviceTypesCount}</div>
-            <div style={{ fontSize: '12px', color: '#BE185D' }}>Loại thiết bị</div>
+          <div className="col-12 col-sm-6 col-xl-3">
+            <div className="card border border-danger bg-danger-subtle text-center p-3 shadow-sm">
+              <div className="fs-3 fw-bold text-danger-emphasis">{data.deviceTypesCount}</div>
+              <div className="small text-danger-emphasis fw-semibold">Loại thiết bị</div>
+            </div>
           </div>
         </div>
       </main>

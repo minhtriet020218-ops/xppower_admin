@@ -3,15 +3,26 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 
 function App() {
-  // Quản lý trạng thái đăng nhập đơn giản cho Frontend Prototype
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [hasLoggedOut, setHasLoggedOut] = useState<boolean>(false);
 
   return (
     <div className="app-container">
       {!isLoggedIn ? (
-        <LoginPage onLoginSuccess={() => setIsLoggedIn(true)} />
+        <LoginPage 
+          onLoginSuccess={() => {
+            setIsLoggedIn(true);
+            setHasLoggedOut(false); // Reset cờ khi đăng nhập thành công
+          }} 
+          showLogoutMessage={hasLoggedOut}
+        />
       ) : (
-        <DashboardPage />
+        <DashboardPage 
+          onLogout={() => {
+            setIsLoggedIn(false);
+            setHasLoggedOut(true); // Bật cờ thông báo khi bấm đăng xuất
+          }} 
+        />
       )}
     </div>
   );
