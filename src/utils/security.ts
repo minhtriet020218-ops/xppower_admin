@@ -6,14 +6,11 @@ export const sanitizeInput = (str: string): string => {
     .replace(/&/g, "&")
     .replace(/</g, "<")
     .replace(/>/g, ">")
-    .replace(/"/g, "&quot;")
+    .replace(/"/g, '"')
     .replace(/'/g, "'")
     .replace(/\//g, "/");
 };
 
-/**
- * OWASP Rate Limiter trên Client (chống Brute-force Login)
- */
 export class RateLimiter {
   private static attempts: number = 0;
   private static lockUntil: number = 0;
@@ -27,7 +24,7 @@ export class RateLimiter {
   static recordFailedAttempt(): void {
     this.attempts += 1;
     if (this.attempts >= 5) {
-      this.lockUntil = Date.now() + 60 * 1000; // Khóa 1 phút nếu nhập sai 5 lần
+      this.lockUntil = Date.now() + 60 * 1000; // Khóa 1 phút nếu nhập sai 5 lần liên tiếp
       this.attempts = 0;
     }
   }

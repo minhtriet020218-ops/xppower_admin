@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
-import { DashboardStatsDTO, DashboardStatsDTOBuilder } from '../dtos/DashboardDTO';
+import { type DashboardStatsDTO, DashboardStatsDTOBuilder } from '../dtos/DashboardDTO';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 

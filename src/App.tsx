@@ -1,26 +1,17 @@
 import { useState } from 'react';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { AuthService } from './services/AuthService';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => AuthService.isAuthenticated());
-
-  const handleLoginSuccess = () => {
-    setIsLoggedIn(true);
-  };
-
-  const handleLogout = () => {
-    AuthService.logout();
-    setIsLoggedIn(false);
-  };
+  // Quản lý trạng thái đăng nhập đơn giản cho Frontend Prototype
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
   return (
     <div className="app-container">
       {!isLoggedIn ? (
-        <LoginPage onLoginSuccess={handleLoginSuccess} />
+        <LoginPage onLoginSuccess={() => setIsLoggedIn(true)} />
       ) : (
-        <DashboardPage onLogout={handleLogout} />
+        <DashboardPage />
       )}
     </div>
   );

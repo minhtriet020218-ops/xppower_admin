@@ -1,4 +1,4 @@
-import { DashboardStatsDTO, DashboardStatsDTOBuilder } from '../dtos/DashboardDTO';
+import { type DashboardStatsDTO, DashboardStatsDTOBuilder } from '../dtos/DashboardDTO';
 import { AxiosClient } from './api/AxiosClient';
 import { API_ENDPOINTS } from './api/Endpoints';
 
