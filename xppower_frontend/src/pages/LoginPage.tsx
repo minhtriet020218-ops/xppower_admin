@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LoginRequestDTOBuilder } from '../dtos/AuthDTO';
 import { sanitizeInput, RateLimiter } from '../utils/security';
+import { AuthService } from '../services/AuthService';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -15,7 +16,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, showLogout
   const [logoutMsg, setLogoutMsg] = useState(showLogoutMessage ? 'Đã đăng xuất thành công!' : '');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -35,16 +36,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, showLogout
         .setRememberMe(rememberMe)
         .build();
 
-      // Kiểm tra xác thực (Mock authentication)
-      if (loginDTO.username === 'admin' && password === 'admin123') {
-        RateLimiter.reset();
-        onLoginSuccess();
-      } else {
-        RateLimiter.recordFailedAttempt();
-        setErrorMsg('Tên đăng nhập hoặc mật khẩu không chính xác!');
-      }
+      // --- 2. GỌI API THẬT THÔNG QUA AuthService ---
+      await AuthService.login(loginDTO);
+      // Đăng nhập thành công từ Server -> Reset bộ đếm lỗi và gọi callback chuyển trang
+      RateLimiter.reset();
+      onLoginSuccess();
+
     } catch (err: any) {
-      setErrorMsg(err.message || 'Đã có lỗi xảy ra.');
+      // Bắt lỗi từ server hoặc lỗi mạng được ném ra từ AuthService
+      RateLimiter.recordFailedAttempt();
+      setErrorMsg(err.message || 'Tên đăng nhập hoặc mật khẩu không chính xác!');
     } finally {
       setIsLoading(false);
     }
@@ -77,13 +78,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, showLogout
             {logoutMsg && (
               <div className="alert alert-success py-2 text-center small rounded-pill mb-3 shadow-sm d-flex justify-content-between align-items-center px-3" role="alert">
                 <span>{logoutMsg}</span>
-                <button 
-                  type="button" 
-                  className="btn-close btn-close-sm" 
-                  style={{ fontSize: '10px' }} 
-                  onClick={() => setLogoutMsg('')}
-                  aria-label="Close"
-                ></button>
               </div>
             )}
 
