@@ -21,9 +21,9 @@ export class AuthService {
         loginDto
       );
 
-      // Kiểm tra và lưu trữ token bảo mật vào sessionStorage nếu phản hồi hợp lệ
+      // Kiểm tra và lưu trữ token bảo mật vào localStorage nếu phản hồi hợp lệ
       if (response && response.token) {
-        sessionStorage.setItem('accessToken', response.token);
+        localStorage.setItem('accessToken', response.token);
       } else {
         throw new Error('Phản hồi từ máy chủ không hợp lệ.');
       }
@@ -40,13 +40,13 @@ export class AuthService {
    * Xử lý đăng xuất, xóa phiên làm việc của người dùng
    */
   static logout(): void {
-    sessionStorage.removeItem('accessToken');
+    localStorage.removeItem('accessToken');
   }
 
   /**
    * Kiểm tra trạng thái xác thực hiện tại của người dùng
    */
   static isAuthenticated(): boolean {
-    return !!sessionStorage.getItem('accessToken');
+    return !!localStorage.getItem('accessToken');
   }
 }

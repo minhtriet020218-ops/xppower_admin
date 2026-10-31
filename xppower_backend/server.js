@@ -2,96 +2,124 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-const PORT = 8080; // Khớp với baseUrl trong AxiosClient.ts của frontend
+const PORT = 8080;
 
-// Middleware cấu hình CORS và phân tích JSON
 app.use(cors());
 app.use(express.json());
 
+// --- Mock Database tạm thời trên RAM cho Assets ---
+let mockAssetsDatabase = [
+  {
+    id: '1',
+    itAssetCode: 'ASSET-1215',
+    hostname: 'PC-VN-01',
+    category: 'Laptop',
+    product: 'Dell Vostro',
+    productionLine: 'PS Production',
+    financeAssetCode: 'TOOLVN202106-750',
+    poInvoice: 'VTG210573PR',
+    serialNumber: '5KSGHB3',
+    computerDescription: 'Laptop Dell Vostro 3400, i7-1165G7, 16GB RAM, 512 SSD',
+    assetStatus: 'In Stock',
+    staffCode: 'VN2612246',
+  },
+  {
+    id: '2',
+    itAssetCode: 'ASSET-1216',
+    hostname: 'PC-VN-02',
+    category: 'Monitor',
+    product: 'Dell UltraSharp',
+    productionLine: 'ENG-PS-IDL',
+    financeAssetCode: 'TOOLVN202107-812',
+    poInvoice: 'VTG210892PR',
+    serialNumber: '7X99LP2',
+    computerDescription: 'Màn hình Dell 24 inch P2422H IPS',
+    assetStatus: 'In Use',
+    staffCode: 'VN2612247',
+  },
+  {
+    id: '3',
+    itAssetCode: 'ASSET-1217',
+    hostname: 'PC-VN-03',
+    category: 'Desktop',
+    product: 'HP ProDesk',
+    productionLine: 'IE-IDL',
+    financeAssetCode: 'TOOLVN202201-104',
+    poInvoice: 'VTG220115PR',
+    serialNumber: 'MXL2390V8',
+    computerDescription: 'Máy tính để bàn HP ProDesk 400 G9 MT, i5-12500',
+    assetStatus: 'In Use',
+    staffCode: 'VN2612248',
+  }
+];
+
 /**
  * 1. API Đăng nhập
- * Endpoint: POST /api/v1/auth/login
  */
 app.post('/api/v1/auth/login', (req, res) => {
   const { username, passwordHash } = req.body;
-
-  // Kiểm tra tài khoản (Sau này bạn có thể thay thế bằng kết nối Database thực tế như MySQL/MongoDB)
   if (username === 'admin' && (passwordHash === 'admin123' || passwordHash)) {
     return res.status(200).json({
       token: 'mock_jwt_token_from_real_backend_xyz987',
       username: username
     });
   }
-
-  return res.status(401).json({
-    message: 'Tên đăng nhập hoặc mật khẩu không chính xác!'
-  });
+  return res.status(401).json({ message: 'Tên đăng nhập hoặc mật khẩu không chính xác!' });
 });
 
 /**
- * 2. API Lấy thống kê Dashboard
- * Endpoint: GET /api/v1/dashboard/stats
+ * 2. API Lấy danh sách tài sản: GET /api/v1/assets
  */
-app.get('/api/v1/dashboard/stats', (req, res) => {
-  const dashboardStats = {
-    totalAssets: 2198,
-    activeAssets: 2112,
-    departmentsCount: 30,
-    deviceTypesCount: 5,
-    departmentDistribution: [
-      { name: 'PS Production', count: 558 },
-      { name: 'Không xác định', count: 323 },
-      { name: 'ENG-PS-IDL', count: 261 },
-      { name: 'IE-IDL', count: 180 },
-      { name: 'NPI-IDL', count: 100 },
-      { name: 'PMC', count: 68 },
-      { name: 'PP/Cable-PS Off', count: 63 },
-      { name: 'HVHP-PS Off', count: 51 },
-      { name: 'FINANCE', count: 51 },
-      { name: 'FACILITY', count: 46 },
-      { name: 'P&O', count: 40 },
-      { name: 'Engineering', count: 29 },
-      { name: 'TRO', count: 25 },
-      { name: 'Quality', count: 24 },
-      { name: 'ENG-Mags', count: 24 },
-      { name: 'QA-HVHP', count: 18 },
-      { name: 'EMCO-PS', count: 18 },
-      { name: 'HVHP & RF Project', count: 17 },
-      { name: 'EMCO-ENG-PS', count: 16 },
-      { name: 'P&O IDL', count: 15 },
-      { name: 'WH-DL OU', count: 15 },
-      { name: 'Category Sourcing HVHP', count: 15 },
-      { name: 'Production', count: 15 },
-      { name: 'Global Planning', count: 14 },
-      { name: 'Component Engineering', count: 14 },
-      { name: 'QA-Mags', count: 13 },
-      { name: 'EMCO-QA', count: 12 },
-      { name: 'Mags Production Off', count: 12 },
-      { name: 'Operations', count: 10 },
-      { name: 'WH-DL OU2', count: 10 }
-    ],
-    statusDistribution: [
-      { status: 'In Stock', count: 180 },
-      { status: 'In Use', count: 1635 },
-      { status: 'Damaged', count: 45 },
-      { status: 'Không xác định', count: 465 },
-      { status: 'Write off', count: 20 },
-      { status: 'Retired', count: 15 },
-      { status: 'Backup', count: 10 }
-    ],
-    typeDistribution: [
-      { type: 'Laptop', count: 611 },
-      { type: 'Monitor', count: 822 },
-      { type: 'Network Device', count: 369 },
-      { type: 'Desktop', count: 100 },
-      { type: 'Scanner', count: 45 }
-    ]
-  };
-
-  return res.status(200).json(dashboardStats);
+app.get('/api/v1/assets', (req, res) => {
+  return res.status(200).json(mockAssetsDatabase);
 });
 
-// Khởi động server lắng nghe tại cổng 8080
+/**
+ * 3. API Tạo mới tài sản: POST /api/v1/assets
+ */
+app.post('/api/v1/assets', (req, res) => {
+  const newAsset = { id: Date.now().toString(), ...req.body };
+  mockAssetsDatabase.unshift(newAsset); // Đưa lên đầu danh sách
+  return res.status(201).json(newAsset);
+});
+
+/**
+ * 4. API Cập nhật tài sản: PUT /api/v1/assets/:id
+ */
+app.put('/api/v1/assets/:id', (req, res) => {
+  const { id } = req.params;
+  const index = mockAssetsDatabase.findIndex(item => item.id === id);
+  
+  if (index === -1) {
+    return res.status(404).json({ message: 'Không tìm thấy tài sản cần sửa!' });
+  }
+
+  mockAssetsDatabase[index] = { ...mockAssetsDatabase[index], ...req.body, id };
+  return res.status(200).json(mockAssetsDatabase[index]);
+});
+
+/**
+ * 5. API Xóa (Thanh lý) tài sản: DELETE /api/v1/assets
+ * Nhận vào một mảng chứa danh sách ID cần xóa: { ids: ['1', '2'] }
+ */
+app.delete('/api/v1/assets', (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids)) {
+    return res.status(400).json({ message: 'Danh sách ID không hợp lệ!' });
+  }
+
+  mockAssetsDatabase = mockAssetsDatabase.filter(item => !ids.includes(item.id));
+  return res.status(200).json({ message: 'Xóa thành công các tài sản đã chọn', deletedIds: ids });
+});
+
+/**
+ * 6. API Thống kê Dashboard
+ */
+app.get('/api/v1/dashboard/stats', (req, res) => {
+  // Giữ nguyên phần thống kê dashboard cũ của bạn...
+  res.status(200).json({ totalAssets: mockAssetsDatabase.length });
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Backend server đang chạy mượt mà tại: http://localhost:${PORT}`);
+  console.log(`🚀 Backend server đang chạy tại: http://localhost:${PORT}`);
 });

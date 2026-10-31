@@ -9,9 +9,10 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 
 interface DashboardPageProps {
   onLogout?: () => void;
+  onTabChange?: (tab: 'dashboard' | 'assets') => void;
 }
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, onTabChange }) => {
   const [data, setData] = useState<DashboardStatsDTO | null>(null);
 
   useEffect(() => {
@@ -51,7 +52,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   return (
     <div className="bg-light min-vh-100 font-sans">
       {/* Header component có gắn Dropdown và Đăng xuất */}
-      <Header onLogout={onLogout} />
+      <Header onLogout={onLogout} activeTab="dashboard" onTabChange={onTabChange} />
 
       {/* Main Content */}
       <main className="container-fluid px-4 py-4">
