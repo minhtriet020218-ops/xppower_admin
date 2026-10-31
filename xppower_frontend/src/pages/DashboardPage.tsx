@@ -31,20 +31,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, onTabCha
     );
   }
 
+  // Thêm toán tử bảo vệ chống lỗi undefined
   const barData = {
-    labels: data.departmentDistribution.map(d => d.name),
+    labels: data?.departmentDistribution?.map(d => d.name) || [],
     datasets: [{
       label: 'Số lượng tài sản',
-      data: data.departmentDistribution.map(d => d.count),
+      data: data?.departmentDistribution?.map(d => d.count) || [],
       backgroundColor: '#3B82F6',
       borderRadius: 4
     }]
   };
 
   const statusData = {
-    labels: data.statusDistribution.map(s => s.status),
+    labels: data?.statusDistribution?.map(s => s.status) || [],
     datasets: [{
-      data: data.statusDistribution.map(s => s.count),
+      data: data?.statusDistribution?.map(s => s.count) || [],
       backgroundColor: ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
     }]
   };
@@ -66,7 +67,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, onTabCha
           {/* Horizontal Bar Chart Card với chiều cao động và thanh cuộn */}
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100 p-3">
-              <h3 className="fs-6 text-center mb-3 fw-bold text-secondary">📊 Bộ phận được cấp ({data.departmentDistribution.length} bộ phận)</h3>
+              <h3 className="fs-6 text-center mb-3 fw-bold text-secondary">
+                📊 Bộ phận được cấp ({data?.departmentDistribution?.length || 0} bộ phận)
+              </h3>
               
               {/* Khung chứa có thanh cuộn dọc khi danh sách dài */}
               <div 
@@ -78,7 +81,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, onTabCha
                 }}
               >
                 {/* Tính chiều cao động: mỗi bộ phận nhân thêm ~25px để không bị dính chữ */}
-                <div style={{ height: `${Math.max(350, data.departmentDistribution.length * 25)}px` }}>
+                <div style={{ height: `${Math.max(350, (data?.departmentDistribution?.length || 0) * 25)}px` }}>
                   <Bar 
                     data={barData} 
                     options={{ 

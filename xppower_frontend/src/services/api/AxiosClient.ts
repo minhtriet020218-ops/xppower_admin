@@ -14,14 +14,14 @@ export class AxiosClient {
 
   static async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
-    const token = sessionStorage.getItem('accessToken');
+    const token = localStorage.getItem('accessToken'); // 🔄 Đồng bộ sang localStorage
 
     const response = await fetch(`${this.baseUrl}${endpoint}${query}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': token ? `Bearer ${token}` : '',
-        'X-CSRF-Token': sessionStorage.getItem('csrfToken') || '',
+        'X-CSRF-Token': localStorage.getItem('csrfToken') || '',
       },
     });
 
@@ -33,14 +33,14 @@ export class AxiosClient {
   }
 
   static async post<T>(endpoint: string, body: any): Promise<T> {
-    const token = sessionStorage.getItem('accessToken');
+    const token = localStorage.getItem('accessToken'); // 🔄 Đồng bộ sang localStorage
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': token ? `Bearer ${token}` : '',
-        'X-CSRF-Token': sessionStorage.getItem('csrfToken') || '',
+        'X-CSRF-Token': localStorage.getItem('csrfToken') || '',
       },
       body: JSON.stringify(body),
     });
@@ -52,16 +52,15 @@ export class AxiosClient {
     return response.json();
   }
 
-  // ⭐ BỔ SUNG PHƯƠNG THỨC PUT (GIỮ NGUYÊN CẤU TRÚC FETCH)
   static async put<T>(endpoint: string, body: any): Promise<T> {
-    const token = sessionStorage.getItem('accessToken');
+    const token = localStorage.getItem('accessToken'); // 🔄 Đồng bộ sang localStorage
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': token ? `Bearer ${token}` : '',
-        'X-CSRF-Token': sessionStorage.getItem('csrfToken') || '',
+        'X-CSRF-Token': localStorage.getItem('csrfToken') || '',
       },
       body: JSON.stringify(body),
     });
@@ -73,16 +72,15 @@ export class AxiosClient {
     return response.json();
   }
 
-  // ⭐ BỔ SUNG PHƯƠNG THỨC DELETE (GIỮ NGUYÊN CẤU TRÚC FETCH)
   static async delete<T>(endpoint: string, body?: any): Promise<T> {
-    const token = sessionStorage.getItem('accessToken');
+    const token = localStorage.getItem('accessToken'); // 🔄 Đồng bộ sang localStorage
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': token ? `Bearer ${token}` : '',
-        'X-CSRF-Token': sessionStorage.getItem('csrfToken') || '',
+        'X-CSRF-Token': localStorage.getItem('csrfToken') || '',
       },
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -91,7 +89,6 @@ export class AxiosClient {
       throw new Error(`API Error: ${response.statusText}`);
     }
 
-    // Trường hợp trả về rỗng hoặc JSON
     const text = await response.text();
     return text ? JSON.parse(text) : ({} as T);
   }
