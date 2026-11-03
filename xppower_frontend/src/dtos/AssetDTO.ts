@@ -9,7 +9,7 @@ export interface AssetDTO {
   poInvoice: string;
   serialNumber: string;
   computerDescription: string;
-  assetStatus: 'In Stock' | 'In Use';
+  assetStatus: 'In Stock' | 'In Use'| 'Damaged' | 'Không xác định' | 'Write off' | 'Retired' | 'Backup';
   staffCode: string;
   assignedTo?: string;
   mailUser?: string;

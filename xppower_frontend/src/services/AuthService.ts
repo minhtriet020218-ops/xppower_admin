@@ -24,8 +24,10 @@ export class AuthService {
       // Kiểm tra và lưu trữ token bảo mật vào localStorage nếu phản hồi hợp lệ
       if (response && response.token) {
         localStorage.setItem('accessToken', response.token);
-      } else {
-        throw new Error('Phản hồi từ máy chủ không hợp lệ.');
+        // Lưu thêm username vào localStorage để Header có thể đọc lại bất cứ lúc nào
+        if (response.username) {
+          localStorage.setItem('username', response.username);
+        }
       }
 
       return response;
@@ -41,6 +43,7 @@ export class AuthService {
    */
   static logout(): void {
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('username');
   }
 
   /**

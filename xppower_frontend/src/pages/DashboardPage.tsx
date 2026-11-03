@@ -50,6 +50,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, onTabCha
     }]
   };
 
+  const typeData = {
+    labels: data?.typeDistribution?.map(t => t.type) || [],
+    datasets: [{
+      data: data?.typeDistribution?.map(t => t.count) || [],
+      backgroundColor: ['#10B981', '#EF4444', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6']
+    }]
+  };
+
   return (
     <div className="bg-light min-vh-100 font-sans">
       {/* Header component có gắn Dropdown và Đăng xuất */}
@@ -106,9 +114,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, onTabCha
               </div>
             </div>
             <div className="card border-0 shadow-sm p-3">
-              <h3 className="fs-6 text-center mb-2 fw-bold text-secondary">🔧 Loại thiết bị</h3>
+              <h3 className="fs-6 text-center mb-2 fw-bold text-secondary">🔧 Loại thiết bị (Category)</h3>
               <div style={{ height: '360px' }} className="d-flex justify-content-center">
-                <Doughnut data={statusData} options={{ maintainAspectRatio: false }} />
+                <Doughnut data={typeData} options={{ maintainAspectRatio: false }} />
               </div>
             </div>
           </div>

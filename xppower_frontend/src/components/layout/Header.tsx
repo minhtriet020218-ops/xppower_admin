@@ -8,13 +8,17 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
-  username = 'VN2612246', 
+  username, 
   onLogout, 
   activeTab = 'dashboard', 
   onTabChange 
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Lấy username từ localStorage nếu không được truyền trực tiếp qua props
+  const currentUsername = username || localStorage.getItem('username') || 'Admin';
+  const firstLetter = currentUsername.charAt(0).toUpperCase();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -68,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Section: User & Dropdown */}
         <div className="d-flex align-items-center gap-3">
           <div className="text-end small lh-sm d-none d-sm-block">
-            <div className="fw-bold text-dark">{username}</div>
+            <div className="fw-bold text-dark">{currentUsername}</div>
             <div className="text-muted" style={{ fontSize: '11px' }}>Admin</div>
           </div>
 
@@ -82,16 +86,16 @@ export const Header: React.FC<HeaderProps> = ({
               className="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" 
               style={{ width: '38px', height: '38px', backgroundColor: '#8B5CF6', cursor: 'pointer' }}
             >
-              V
+              {firstLetter}
             </div>
             
             {isDropdownOpen && (
               <ul className="dropdown-menu show shadow border-0 p-3 position-absolute" style={{ width: '260px', borderRadius: '12px', right: 0, top: '100%', marginTop: '8px', zIndex: 1050 }}>
                 <li className="text-center pb-3 border-bottom mb-2">
                   <div className="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold mx-auto mb-2" style={{ width: '48px', height: '48px', backgroundColor: '#8B5CF6', fontSize: '18px' }}>
-                    V
+                    {firstLetter}
                   </div>
-                  <div className="fw-bold text-dark">{username}</div>
+                  <div className="fw-bold text-dark">{currentUsername}</div>
                   <div className="text-muted small" style={{ fontSize: '12px' }}>Admin</div>
                 </li>
                 <li>

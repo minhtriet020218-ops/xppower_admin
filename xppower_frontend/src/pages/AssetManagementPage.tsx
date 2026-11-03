@@ -330,7 +330,12 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                         <td>{item.serialNumber}</td>
                         <td className="text-wrap" style={{ minWidth: '220px' }}>{item.computerDescription}</td>
                         <td>
-                          <span className={`badge fw-bold px-2 py-1 ${item.assetStatus === 'In Stock' ? 'bg-warning text-dark' : 'bg-success'}`}>
+                          <span className={`badge fw-bold px-2 py-1 ${
+                            item.assetStatus === 'In Use' ? 'bg-success' :
+                            item.assetStatus === 'In Stock' ? 'bg-warning text-dark' :
+                            item.assetStatus === 'Damaged' ? 'bg-danger' :
+                            item.assetStatus === 'Backup' ? 'bg-primary' : 'bg-secondary'
+                          }`}>
                             {item.assetStatus}
                           </span>
                         </td>
@@ -407,9 +412,18 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                     </div>
                     <div className="mb-3">
                       <label className="form-label small fw-bold text-secondary">Status</label>
-                      <select className="form-select form-select-sm" value={formData.assetStatus} onChange={(e) => setFormData({...formData, assetStatus: e.target.value as any})}>
+                      <select 
+                        className="form-select form-select-sm" 
+                        value={formData.assetStatus} 
+                        onChange={(e) => setFormData({...formData, assetStatus: e.target.value as any})}
+                      >
                         <option value="In Stock">In Stock</option>
                         <option value="In Use">In Use</option>
+                        <option value="Damaged">Damaged</option>
+                        <option value="Không xác định">Không xác định</option>
+                        <option value="Write off">Write off</option>
+                        <option value="Retired">Retired</option>
+                        <option value="Backup">Backup</option>
                       </select>
                     </div>
                     <div className="mb-3">
