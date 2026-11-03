@@ -92,4 +92,40 @@ export class AxiosClient {
     const text = await response.text();
     return text ? JSON.parse(text) : ({} as T);
   }
+
+  /** Ghép đường dẫn tương đối của server (vd /uploads/a.jpg) thành URL đầy đủ để hiển thị trong <img>. */
+  static resolveUrl(path?: string | null): string {
+    if (!path) return '';
+    return /^https?:\/\//i.test(path) ? path : `${this.baseUrl}${path}`;
+  }
+
+  /** Gửi multipart/form-data. Không tự set Content-Type để trình duyệt tự thêm boundary. */
+  private static async sendForm<T>(method: 'POST' | 'PUT', endpoint: string, form: FormData): Promise<T> {
+    const token = localStorage.getItem('accessToken');
+
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method,
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'X-CSRF-Token': localStorage.getItem('csrfToken') || '',
+      },
+      body: form,
+    });
+
+    if (!response.ok) {
+      // Ưu tiên hiển thị thông báo lỗi cụ thể từ server (vd: "Ảnh vượt quá 5MB!")
+      const err = await response.json().catch(() => null);
+      throw new Error(err?.message || `API Error: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  static postForm<T>(endpoint: string, form: FormData): Promise<T> {
+    return this.sendForm<T>('POST', endpoint, form);
+  }
+
+  static putForm<T>(endpoint: string, form: FormData): Promise<T> {
+    return this.sendForm<T>('PUT', endpoint, form);
+  }
 }

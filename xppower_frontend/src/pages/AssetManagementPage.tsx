@@ -1,18 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '../components/layout/Header';
 import { AssetService } from '../services/AssetService';
+import { AxiosClient } from '../services/api/AxiosClient';
 import type { AssetDTO } from '../dtos/AssetDTO';
+import { SEARCH_SCOPES, DEFAULT_SCOPE, createSearch, filterAssets, isActive } from '../utils/assetSearch';
 
 interface AssetManagementPageProps {
   onLogout?: () => void;
   onTabChange?: (tab: 'dashboard' | 'assets') => void;
 }
 
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB - khớp giới hạn của backend
+
 export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogout, onTabChange }) => {
   const [assets, setAssets] = useState<AssetDTO[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchKeyword, setSearchKeyword] = useState<string>('');
-  const [searchField, setSearchField] = useState<string>('IT ASSET-CODE');
+  const [searchField, setSearchField] = useState<string>(DEFAULT_SCOPE);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -27,6 +32,8 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
     financeAssetCode: '',
     poInvoice: '',
     serialNumber: '',
+    macAddressWireless: '',
+    ipAddress: '',
     computerDescription: '',
     assetStatus: 'In Stock' as 'In Stock' | 'In Use',
     staffCode: '',
@@ -39,9 +46,70 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
     note: '',
   });
 
+  // --- HÌNH ẢNH TÀI SẢN (trong modal Create / Edit) ---
+  const [imageFile, setImageFile] = useState<File | null>(null);          // file người dùng vừa chọn
+  const [imagePreview, setImagePreview] = useState<string | null>(null);  // URL tạm để xem trước
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>('');     // ảnh đang lưu trên server (khi Edit)
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Giải phóng URL tạm khi đổi ảnh khác hoặc đóng modal để không rò rỉ bộ nhớ
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
+
+  const resetImagePicker = (existingUrl: string = '') => {
+    setImageFile(null);
+    setImagePreview(null);
+    setCurrentImageUrl(existingUrl);
+  };
+
+  const handleImageSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // cho phép chọn lại đúng file vừa chọn
+    if (!file) return;
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      alert('Chỉ hỗ trợ ảnh JPG, PNG, WEBP hoặc GIF!');
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      alert('Ảnh vượt quá 5MB, vui lòng chọn ảnh nhỏ hơn!');
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  // Ưu tiên ảnh vừa chọn, nếu chưa có thì dùng ảnh đã lưu trên server
+  const displayedImage = imagePreview ?? (currentImageUrl ? AxiosClient.resolveUrl(currentImageUrl) : null);
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    resetImagePicker();
+  };
+
   useEffect(() => {
     fetchAssets();
   }, []);
+
+  // --- TÌM KIẾM REALTIME (lọc trực tiếp trên bảng, không dropdown) ---
+  // useDeferredValue: ô nhập luôn phản hồi tức thì, việc lọc bảng được ưu tiên thấp hơn
+  const deferredKeyword = useDeferredValue(searchKeyword);
+  const search = useMemo(() => createSearch(deferredKeyword, searchField), [deferredKeyword, searchField]);
+  const filteredAssets = useMemo(() => filterAssets(assets, search), [assets, search]);
+  const isSearching = isActive(search);
+
+  // Bỏ chọn các dòng đã bị lọc ẩn đi, tránh việc Edit/Xóa nhầm tài sản không còn nhìn thấy
+  useEffect(() => {
+    const visible = new Set(filteredAssets.map(a => a.id));
+    setSelectedAssetIds(prev => {
+      const next = prev.filter(id => visible.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [filteredAssets]);
 
   const fetchAssets = () => {
     setIsLoading(true);
@@ -64,12 +132,11 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
     }
   };
 
+  const allVisibleSelected =
+    filteredAssets.length > 0 && filteredAssets.every(item => selectedAssetIds.includes(item.id));
+
   const handleToggleSelectAll = () => {
-    if (selectedAssetIds.length === assets.length) {
-      setSelectedAssetIds([]);
-    } else {
-      setSelectedAssetIds(assets.map(item => item.id));
-    }
+    setSelectedAssetIds(allVisibleSelected ? [] : filteredAssets.map(item => item.id));
   };
 
   const handleOpenCreate = () => {
@@ -83,6 +150,8 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
       financeAssetCode: '',
       poInvoice: '',
       serialNumber: '',
+      macAddressWireless: '',
+      ipAddress: '',
       computerDescription: '',
       assetStatus: 'In Stock',
       staffCode: '',
@@ -94,6 +163,7 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
       managedByGroup: 'Asia - Vietnam',
       note: '',
     });
+    resetImagePicker();
     setIsModalOpen(true);
   };
 
@@ -115,6 +185,8 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
         financeAssetCode: targetAsset.financeAssetCode || '',
         poInvoice: targetAsset.poInvoice || '',
         serialNumber: targetAsset.serialNumber || '',
+        macAddressWireless: targetAsset.macAddressWireless || '',
+        ipAddress: targetAsset.ipAddress || '',
         computerDescription: targetAsset.computerDescription || '',
         assetStatus: targetAsset.assetStatus || 'In Stock',
         staffCode: targetAsset.staffCode || '',
@@ -126,6 +198,7 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
         managedByGroup: targetAsset.managedByGroup || 'Asia - Vietnam',
         note: targetAsset.note || '',
       });
+      resetImagePicker(targetAsset.imageUrl || '');
       setIsModalOpen(true);
     }
   };
@@ -153,43 +226,28 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
   };
 
   // --- XỬ LÝ LƯU (CREATE / EDIT) QUA BACKEND ---
+  // Dữ liệu và hình ảnh gửi trong CÙNG một request nên không bao giờ bị lệch nhau.
   const handleSaveForm = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
+    setIsSaving(true);
     try {
-    if (modalMode === 'create') {
-      const newAssetData = {
-        itAssetCode: formData.itAssetCode,
-        hostname: formData.hostname,
-        category: formData.category,
-        product: formData.product,
-        productionLine: formData.productionLine,
-        financeAssetCode: formData.financeAssetCode,
-        poInvoice: formData.poInvoice,
-        serialNumber: formData.serialNumber,
-        computerDescription: formData.computerDescription,
-        assetStatus: formData.assetStatus,
-        staffCode: formData.staffCode,
-        assignedTo: formData.assignedTo,
-        mailUser: formData.mailUser,
-        department: formData.department,
-        managedBy: formData.managedBy,
-        managedByGroup: formData.managedByGroup,
-        purchaseDate: formData.purchaseDate,
-        note: formData.note,
-      };
-      const created = await AssetService.createAsset(newAssetData);
-      setAssets([created, ...assets]);
-    } else {
-      const targetId = selectedAssetIds[0];
-      const updated = await AssetService.updateAsset(targetId, formData);
-      setAssets(assets.map((item) => (item.id === targetId ? updated : item)));
+      if (modalMode === 'create') {
+        const created = await AssetService.createAsset(formData, imageFile);
+        setAssets([created, ...assets]);
+      } else {
+        const targetId = selectedAssetIds[0];
+        const updated = await AssetService.updateAsset(targetId, formData, imageFile);
+        setAssets(assets.map((item) => (item.id === targetId ? updated : item)));
+      }
+      closeModal();
+      alert('Lưu dữ liệu thành công!');
+    } catch (error) {
+      console.error('Lỗi khi lưu tài sản:', error);
+      alert(error instanceof Error ? error.message : 'Có lỗi xảy ra khi lưu dữ liệu vào Backend.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsModalOpen(false);
-    alert('Lưu dữ liệu thành công!');
-  } catch (error) {
-    console.error('Lỗi khi lưu tài sản:', error);
-    alert('Có lỗi xảy ra khi lưu dữ liệu vào Backend.');
-  }
   };
 
   return (
@@ -241,14 +299,24 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
           <div className="row g-2 align-items-center">
             <div className="col-12 col-md-3">
               <select className="form-select form-select-sm fw-bold bg-light text-dark" value={searchField} onChange={(e) => setSearchField(e.target.value)}>
-                <option>IT ASSET-CODE</option>
-                <option>Hostname</option>
-                <option>Serial Number</option>
-                <option>Staff Code</option>
+                {Object.keys(SEARCH_SCOPES).map(label => (
+                  <option key={label} value={label}>{label}</option>
+                ))}
               </select>
             </div>
             <div className="col-12 col-md-3">
-              <input type="text" className="form-control form-control-sm" placeholder="Gõ từ khóa tìm kiếm..." value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} />
+              <div className="position-relative">
+                <input
+                  type="search"
+                  className="form-control form-control-sm pe-4"
+                  placeholder="Gõ để tìm: laptop, vn1, dell..."
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setSearchKeyword(''); }}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
             </div>
             <div className="col-6 col-md-2">
               <input type="date" className="form-control form-control-sm" />
@@ -259,9 +327,15 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
             </div>
             <div className="col-12 col-md-auto d-flex gap-2">
               <button className="btn btn-primary btn-sm px-3 fw-bold">🔍 Lọc</button>
-              <button className="btn btn-secondary btn-sm px-3 fw-bold" style={{ backgroundColor: '#718093' }}>🧹 Xóa lọc</button>
+              <button className="btn btn-secondary btn-sm px-3 fw-bold" style={{ backgroundColor: '#718093' }} onClick={() => setSearchKeyword('')}>🧹 Xóa lọc</button>
             </div>
           </div>
+          {isSearching && (
+            <div className="small text-muted mt-2" role="status" aria-live="polite">
+              Tìm thấy <strong className="text-dark">{filteredAssets.length}</strong> / {assets.length} tài sản
+              {' '}khớp “<strong className="text-dark">{deferredKeyword.trim()}</strong>”
+            </div>
+          )}
         </div>
 
         {/* 3. Tùy chỉnh cột */}
@@ -279,7 +353,7 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
               <thead className="table-light text-secondary text-uppercase fs-7" style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                 <tr>
                   <th style={{ width: '40px' }} className="text-center">
-                    <input type="checkbox" className="form-check-input" checked={assets.length > 0 && selectedAssetIds.length === assets.length} onChange={handleToggleSelectAll} />
+                    <input type="checkbox" className="form-check-input" checked={allVisibleSelected} onChange={handleToggleSelectAll} />
                   </th>
                   <th>IT ASSET-CODE</th>
                   <th>Hostname</th>
@@ -289,6 +363,8 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                   <th>Finance Asset Code</th>
                   <th>PO/Invoice</th>
                   <th>Serial Number</th>
+                  <th>MAC Address (Wireless)</th>
+                  <th>IP Address</th>
                   <th>Computer Description</th>
                   <th>Asset Status</th>
                   <th>Staff Code</th>
@@ -308,12 +384,16 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                       <div className="spinner-border spinner-border-sm text-success" role="status"></div> Đang tải dữ liệu...
                     </td>
                   </tr>
-                ) : assets.length === 0 ? (
+                ) : filteredAssets.length === 0 ? (
                   <tr>
-                    <td colSpan={19} className="text-center py-4 text-muted">Không có dữ liệu tài sản nào.</td>
+                    <td colSpan={19} className="text-center py-4 text-muted">
+                      {isSearching
+                        ? <>Không tìm thấy tài sản nào khớp “{deferredKeyword.trim()}”.</>
+                        : 'Không có dữ liệu tài sản nào.'}
+                    </td>
                   </tr>
                 ) : (
-                  assets.map((item) => {
+                  filteredAssets.map((item) => {
                     const isSelected = selectedAssetIds.includes(item.id);
                     return (
                       <tr key={item.id} onClick={() => handleToggleSelectRow(item.id)} className={isSelected ? 'table-active' : ''} style={{ cursor: 'pointer' }}>
@@ -328,6 +408,8 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                         <td>{item.financeAssetCode}</td>
                         <td>{item.poInvoice}</td>
                         <td>{item.serialNumber}</td>
+                        <td>{item.macAddressWireless}</td>
+                        <td>{item.ipAddress}</td>
                         <td className="text-wrap" style={{ minWidth: '220px' }}>{item.computerDescription}</td>
                         <td>
                           <span className={`badge fw-bold px-2 py-1 ${
@@ -366,10 +448,51 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                 <h3 className="fs-5 fw-bold text-dark m-0">
                   {modalMode === 'create' ? 'Add New Asset' : 'Edit Asset'}
                 </h3>
-                <button type="button" className="btn-close position-absolute top-0 end-0" onClick={() => setIsModalOpen(false)}></button>
+                <button type="button" className="btn-close position-absolute top-0 end-0" onClick={closeModal}></button>
               </div>
 
               <form onSubmit={handleSaveForm}>
+                {/* Hình ảnh tài sản: 1 khung ảnh lớn + nút bút chì để đổi ảnh */}
+                <div className="d-flex justify-content-center mb-4">
+                  <div className="position-relative" style={{ width: '100%', maxWidth: '380px' }}>
+                    <div
+                      className="border rounded-4 bg-light d-flex align-items-center justify-content-center overflow-hidden"
+                      style={{ width: '100%', height: '260px' }}
+                    >
+                      {displayedImage ? (
+                        <img
+                          src={displayedImage}
+                          alt={formData.itAssetCode || 'Asset'}
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        />
+                      ) : (
+                        <div className="text-center text-muted">
+                          <div style={{ fontSize: '64px', lineHeight: 1 }}>🖼️</div>
+                          <div className="small mt-2">Chưa có hình ảnh</div>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-primary rounded-circle shadow d-flex align-items-center justify-content-center position-absolute"
+                      style={{ width: '42px', height: '42px', bottom: '-12px', right: '-12px' }}
+                      title="Đổi hình ảnh"
+                      aria-label="Đổi hình ảnh"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      ✏️
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={ACCEPTED_IMAGE_TYPES.join(',')}
+                      className="d-none"
+                      onChange={handleImageSelected}
+                    />
+                  </div>
+                </div>
+
                 <div className="row g-3">
                   <div className="col-12 col-md-6">
                     <div className="mb-3">
@@ -483,8 +606,8 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                 </div>
 
                 <div className="d-flex justify-content-center gap-3 mt-4 pt-3 border-top">
-                  <button type="submit" className="btn btn-primary px-5 fw-bold rounded-pill">Save</button>
-                  <button type="button" className="btn btn-secondary px-5 fw-bold rounded-pill" style={{ backgroundColor: '#6c757d' }} onClick={() => setIsModalOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary px-5 fw-bold rounded-pill" disabled={isSaving}>{isSaving ? 'Đang lưu...' : 'Save'}</button>
+                  <button type="button" className="btn btn-secondary px-5 fw-bold rounded-pill" style={{ backgroundColor: '#6c757d' }} onClick={closeModal}>Cancel</button>
                 </div>
               </form>
             </div>

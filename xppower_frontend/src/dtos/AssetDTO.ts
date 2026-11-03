@@ -8,6 +8,8 @@ export interface AssetDTO {
   financeAssetCode: string;
   poInvoice: string;
   serialNumber: string;
+  macAddressWireless: string;
+  ipAddress: string;
   computerDescription: string;
   assetStatus: 'In Stock' | 'In Use'| 'Damaged' | 'Không xác định' | 'Write off' | 'Retired' | 'Backup';
   staffCode: string;
@@ -18,6 +20,8 @@ export interface AssetDTO {
   managedByGroup?: string;
   purchaseDate?: string;
   note?: string;
+  /** Đường dẫn tương đối do server trả về, ví dụ /uploads/xxxx.jpg */
+  imageUrl?: string | null;
 }
 
 export interface AssetFilterParams {
