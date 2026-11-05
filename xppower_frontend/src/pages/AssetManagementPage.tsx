@@ -62,6 +62,8 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
   const fileInputRef = useRef<HTMLInputElement>(null);    // chọn ảnh từ thư viện / tệp
   const cameraInputRef = useRef<HTMLInputElement>(null);  // mở camera để chụp trực tiếp
   // Chỉ hiện nút chụp ảnh trên thiết bị cảm ứng (điện thoại, máy tính bảng)
+  // Ref dùng để chọn file Excel/CSV từ máy tính
+  const importInputRef = useRef<HTMLInputElement>(null);
   const [isTouchDevice] = useState<boolean>(() => window.matchMedia('(pointer: coarse)').matches);
 
   // Giải phóng URL tạm khi đổi ảnh khác hoặc đóng modal để không rò rỉ bộ nhớ
@@ -123,6 +125,215 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
   useEffect(() => {
     fetchAssets();
   }, []);
+
+  // 1. Hàm Xuất Excel (Xuất toàn bộ hoặc danh sách tài sản đang được lọc/chọn)
+const handleExportExcel = () => {
+  const dataToExport = selectedAssetIds.length > 0 
+    ? assets.filter(item => selectedAssetIds.includes(item.id))
+    : filteredAssets;
+
+  if (dataToExport.length === 0) {
+    alert('Không có dữ liệu tài sản nào để xuất!');
+    return;
+  }
+
+  // Tiêu đề cột Excel
+  const headers = [
+    'IT ASSET-CODE', 'Hostname', 'Category', 'Product', 'Production Line',
+    'Finance Asset Code', 'PO/Invoice', 'Serial Number', 'Wireless MAC', 'LAN MAC',
+    'IP Address', 'Description', 'Status', 'Staff Code', 'Assigned To',
+    'Mail User', 'Department', 'Managed By', 'Managed By Group', 'Purchase Date', 'Note'
+  ];
+
+  // Chuyển danh sách tài sản thành các dòng CSV
+  const csvRows = dataToExport.map(item => [
+    `"${item.itAssetCode || ''}"`,
+    `"${item.hostname || ''}"`,
+    `"${item.category || ''}"`,
+    `"${item.product || ''}"`,
+    `"${item.productionLine || ''}"`,
+    `"${item.financeAssetCode || ''}"`,
+    `"${item.poInvoice || ''}"`,
+    `"${item.serialNumber || ''}"`,
+    `"${item.macAddressWireless || ''}"`,
+    `"${item.macAddressLan || ''}"`,
+    `"${item.ipAddress || ''}"`,
+    `"${(item.computerDescription || '').replace(/"/g, '""')}"`,
+    `"${item.assetStatus || ''}"`,
+    `"${item.staffCode || ''}"`,
+    `"${item.assignedTo || ''}"`,
+    `"${item.mailUser || ''}"`,
+    `"${item.department || ''}"`,
+    `"${item.managedBy || ''}"`,
+    `"${item.managedByGroup || ''}"`,
+    `"${item.purchaseDate || ''}"`,
+    `"${(item.note || '').replace(/"/g, '""')}"`
+  ].join(','));
+
+  // \uFEFF là Byte Order Mark (BOM) giúp Excel mở không bị lỗi tiếng Việt
+  const csvContent = '\uFEFF' + [headers.join(','), ...csvRows].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `Danh_sach_tai_san_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+// 2. Hàm Xuất PDF (Mở lệnh in/lưu PDF của trình duyệt)
+// Hàm Xuất PDF trực tiếp (Tạo trang xem trước báo cáo rồi tự kích hoạt lưu PDF)
+const handleExportPDF = () => {
+  const dataToExport = selectedAssetIds.length > 0 
+    ? assets.filter(item => selectedAssetIds.includes(item.id))
+    : filteredAssets;
+
+  if (dataToExport.length === 0) {
+    alert('Không có dữ liệu tài sản nào để xuất PDF!');
+    return;
+  }
+
+  // Tạo một cửa sổ/iframe ẩn chứa giao diện báo cáo dạng bảng in chuẩn
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Vui lòng cho phép trình duyệt mở popup để xuất PDF!');
+    return;
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+      <meta charset="UTF-8">
+      <title>Báo cáo danh sách tài sản IT - XP Power</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 11px; color: #333; margin: 20px; }
+        h2 { text-align: center; color: #2A5C36; margin-bottom: 5px; }
+        p { text-align: center; color: #666; margin-top: 0; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+        th { background-color: #23522B; color: white; text-transform: uppercase; font-size: 10px; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .footer { margin-top: 20px; text-align: right; font-style: italic; font-size: 10px; }
+      </style>
+    </head>
+    <body>
+      <h2>XP POWER - HỆ THỐNG QUẢN LÝ TÀI SẢN IT</h2>
+      <p>Báo cáo danh sách tài sản ngày ${new Date().toLocaleDateString('vi-VN')}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>IT Asset Code</th>
+            <th>Hostname</th>
+            <th>Category</th>
+            <th>Product</th>
+            <th>Status</th>
+            <th>Department</th>
+            <th>Assigned To</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${dataToExport.map((item, index) => `
+            <tr>
+              <td>${index + 1}</td>
+              <td><b>${item.itAssetCode || ''}</b></td>
+              <td>${item.hostname || ''}</td>
+              <td>${item.category || ''}</td>
+              <td>${item.product || ''}</td>
+              <td>${item.assetStatus || ''}</td>
+              <td>${item.department || ''}</td>
+              <td>${item.assignedTo || '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="footer">
+        Người báo cáo: Admin | Tổng số tài sản: ${dataToExport.length}
+      </div>
+      <script>
+        window.onload = function() {
+          window.print();
+        };
+      </script>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+};
+
+// 3. Hàm Import dữ liệu từ file Excel / CSV
+const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  e.target.value = ''; // Reset input để có thể nạp lại cùng file nếu cần
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const text = event.target?.result as string;
+      const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
+      if (lines.length <= 1) {
+        alert('File không chứa dữ liệu hợp lệ!');
+        return;
+      }
+
+      // Bỏ qua dòng tiêu đề (Header), đọc từng dòng dữ liệu
+      const newAssetsCount: AssetDTO[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+        if (cols[0]) {
+          const newAssetData = {
+            itAssetCode: cols[0] || 'VN-' + Math.floor(10000 + Math.random() * 90000),
+            hostname: cols[1] || '',
+            category: cols[2] || '',
+            product: cols[3] || '',
+            productionLine: cols[4] || '',
+            financeAssetCode: cols[5] || '',
+            poInvoice: cols[6] || '',
+            serialNumber: cols[7] || '',
+            macAddressWireless: cols[8] || '',
+            macAddressLan: cols[9] || '',
+            ipAddress: cols[10] || '',
+            computerDescription: cols[11] || '',
+            assetStatus: (cols[12] || 'In Stock') as any,
+            staffCode: cols[13] || '',
+            assignedTo: cols[14] || '',
+            mailUser: cols[15] || '',
+            department: cols[16] || '',
+            managedBy: cols[17] || 'Johnny Anh',
+            managedByGroup: cols[18] || 'Asia - Vietnam',
+            purchaseDate: cols[19] || '',
+            note: cols[20] || '',
+          };
+          
+          try {
+            const created = await AssetService.createAsset(newAssetData);
+            newAssetsCount.push(created);
+          } catch (err) {
+            console.error(`Lỗi import dòng ${i}:`, err);
+          }
+        }
+      }
+
+      if (newAssetsCount.length > 0) {
+        setAssets(prev => [...newAssetsCount, ...prev]);
+        alert(`Đã nạp thành công ${newAssetsCount.length} tài sản vào hệ thống!`);
+      } else {
+        alert('Không có tài sản mới nào được nạp (có thể do trùng mã tài sản).');
+      }
+    } catch (err) {
+      console.error('Lỗi khi đọc file import:', err);
+      alert('Có lỗi xảy ra khi đọc dữ liệu từ file!');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+};
 
   // --- TÌM KIẾM REALTIME (lọc trực tiếp trên bảng, không dropdown) ---
   // useDeferredValue: ô nhập luôn phản hồi tức thì, việc lọc bảng được ưu tiên thấp hơn
@@ -323,9 +534,44 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
             <button className="btn btn-info btn-sm d-flex align-items-center gap-1 fw-bold px-3 py-2 rounded-2 text-white" style={{ backgroundColor: '#0fb9b1' }}>
               ☁️ Sync to Freshservice
             </button>
-            <button className="btn btn-primary btn-sm d-flex align-items-center gap-1 fw-bold px-3 py-2 rounded-2" style={{ backgroundColor: '#4b7bec' }}>
-              📊 Xuất nhập dữ liệu
-            </button>
+            {/* DROPDOWN XUẤT NHẬP DỮ LIỆU */}
+            <div className="dropdown d-inline-block">
+              <button 
+                className="btn btn-primary btn-sm dropdown-toggle d-flex align-items-center gap-1 fw-bold px-3 py-2 rounded-2" 
+                type="button" 
+                data-bs-toggle="dropdown" 
+                aria-expanded="false"
+                style={{ backgroundColor: '#4b7bec' }}
+              >
+                📊 Xuất nhập dữ liệu
+              </button>
+              <ul className="dropdown-menu shadow border-0 mt-1">
+                <li>
+                  <button className="dropdown-item d-flex align-items-center gap-2 fw-semibold py-2" onClick={handleExportExcel}>
+                    🟢 Xuất Excel (.csv)
+                  </button>
+                </li>
+                <li>
+                  <button className="dropdown-item d-flex align-items-center gap-2 fw-semibold py-2" onClick={handleExportPDF}>
+                    🔴 Xuất PDF / In trang
+                  </button>
+                </li>
+                <li><hr className="dropdown-divider" /></li>
+                <li>
+                  <button className="dropdown-item d-flex align-items-center gap-2 fw-semibold py-2 text-primary" onClick={() => importInputRef.current?.click()}>
+                    🔵 Import Excel (.csv)
+                  </button>
+                </li>
+              </ul>
+              {/* Input file ẩn hỗ trợ Import */}
+              <input 
+                type="file" 
+                ref={importInputRef} 
+                accept=".csv, .xlsx, .xls" 
+                className="d-none" 
+                onChange={handleImportExcel} 
+              />
+            </div>
             {/* Nút Asset Liquidation thực hiện chức năng Xóa */}
             <button 
               onClick={handleLiquidation} 
