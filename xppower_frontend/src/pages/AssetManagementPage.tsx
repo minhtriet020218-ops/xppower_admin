@@ -16,11 +16,14 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB - khớp giới hạn của backe
 // Ảnh chụp bằng iPhone có thể là HEIC; trình duyệt sẽ chuyển sang JPEG khi nén
 const INPUT_IMAGE_TYPES = [...ACCEPTED_IMAGE_TYPES, 'image/heic', 'image/heif'];
 
+const PAGE_SIZE = 15; // Cấu hình hiển thị 15 tài sản mỗi trang
+
 export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogout, onTabChange }) => {
   const [assets, setAssets] = useState<AssetDTO[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [searchField, setSearchField] = useState<string>(DEFAULT_SCOPE);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -127,6 +130,18 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
   const search = useMemo(() => createSearch(deferredKeyword, searchField), [deferredKeyword, searchField]);
   const filteredAssets = useMemo(() => filterAssets(assets, search), [assets, search]);
   const isSearching = isActive(search);
+
+  // Reset về trang 1 khi thay đổi từ khóa tìm kiếm
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchKeyword, searchField]);
+
+  // Tính toán dữ liệu phân trang
+  const totalPages = Math.ceil(filteredAssets.length / PAGE_SIZE) || 1;
+  const paginatedAssets = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredAssets.slice(start, start + PAGE_SIZE);
+  }, [filteredAssets, currentPage]);
 
   // Bỏ chọn các dòng đã bị lọc ẩn đi, tránh việc Edit/Xóa nhầm tài sản không còn nhìn thấy
   useEffect(() => {
@@ -374,9 +389,9 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
           <span className="text-muted small fw-semibold">(Đang hiển thị đầy đủ thông tin)</span>
         </div>
 
-        {/* 4. Bảng dữ liệu */}
+        {/* 4. Bảng dữ liệu kèm phân trang */}
         <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
-          <div className="table-responsive" style={{ maxHeight: '600px' }}>
+          <div className="table-responsive">
             <table className="table table-hover table-bordered align-middle mb-0 text-nowrap" style={{ fontSize: '13px' }}>
               <thead className="table-light text-secondary text-uppercase fs-7" style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                 <tr>
@@ -422,7 +437,7 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                     </td>
                   </tr>
                 ) : (
-                  filteredAssets.map((item) => {
+                  paginatedAssets.map((item) => {
                     const isSelected = selectedAssetIds.includes(item.id);
                     return (
                       <tr key={item.id} onClick={() => handleToggleSelectRow(item.id)} className={isSelected ? 'table-active' : ''} style={{ cursor: 'pointer' }}>
@@ -466,6 +481,51 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
               </tbody>
             </table>
           </div>
+          {/* THANH ĐIỀU HƯỚNG PHÂN TRANG (PAGINATION CONTROLS) */}
+          {filteredAssets.length > 0 && (
+            <div className="d-flex justify-content-between align-items-center p-3 border-top bg-white">
+              <div className="small text-muted">
+                Hiển thị từ <span className="fw-bold text-dark">{Math.min((currentPage - 1) * PAGE_SIZE + 1, filteredAssets.length)}</span> đến <span className="fw-bold text-dark">{Math.min(currentPage * PAGE_SIZE, filteredAssets.length)}</span> trong tổng số <span className="fw-bold text-dark">{filteredAssets.length}</span> tài sản ({PAGE_SIZE} tài sản/trang)
+              </div>
+              <nav aria-label="Page navigation">
+                <ul className="pagination pagination-sm mb-0">
+                  {/* Nút về Trang Đầu */}
+                  <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setCurrentPage(1)} title="Trang đầu">
+                      «« Đầu
+                    </button>
+                  </li>
+
+                  {/* Nút Trước */}
+                  <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
+                      « Trước
+                    </button>
+                  </li>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                      <button className="page-link" onClick={() => setCurrentPage(page)}>
+                        {page}
+                      </button>
+                    </li>
+                  ))}
+                  {/* Nút Sau */}
+                  <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}>
+                      Sau »
+                    </button>
+                  </li>
+
+                  {/* Nút đến Trang Cuối */}
+                  <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setCurrentPage(totalPages)} title="Trang cuối">
+                      Cuối »»
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          )}
         </div>
       </main>
 
