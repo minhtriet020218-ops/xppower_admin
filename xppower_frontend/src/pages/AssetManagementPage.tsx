@@ -3,6 +3,7 @@ import { Header } from '../components/layout/Header';
 import { AssetService } from '../services/AssetService';
 import { AxiosClient } from '../services/api/AxiosClient';
 import type { AssetDTO } from '../dtos/AssetDTO';
+import { compressImage } from '../utils/imageCompress';
 import { SEARCH_SCOPES, DEFAULT_SCOPE, createSearch, filterAssets, isActive } from '../utils/assetSearch';
 
 interface AssetManagementPageProps {
@@ -12,6 +13,8 @@ interface AssetManagementPageProps {
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB - khớp giới hạn của backend
+// Ảnh chụp bằng iPhone có thể là HEIC; trình duyệt sẽ chuyển sang JPEG khi nén
+const INPUT_IMAGE_TYPES = [...ACCEPTED_IMAGE_TYPES, 'image/heic', 'image/heif'];
 
 export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogout, onTabChange }) => {
   const [assets, setAssets] = useState<AssetDTO[]>([]);
@@ -33,9 +36,10 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
     poInvoice: '',
     serialNumber: '',
     macAddressWireless: '',
+    macAddressLan: '',
     ipAddress: '',
     computerDescription: '',
-    assetStatus: 'In Stock' as 'In Stock' | 'In Use',
+    assetStatus: 'In Stock' as 'In Stock' | 'In Use' | 'Damaged' | 'Không xác định' | 'Write off' | 'Retired' | 'Backup',
     staffCode: '',
     assignedTo: '',
     mailUser: '',
@@ -51,7 +55,11 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
   const [imagePreview, setImagePreview] = useState<string | null>(null);  // URL tạm để xem trước
   const [currentImageUrl, setCurrentImageUrl] = useState<string>('');     // ảnh đang lưu trên server (khi Edit)
   const [isSaving, setIsSaving] = useState<boolean>(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isProcessingImage, setIsProcessingImage] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);    // chọn ảnh từ thư viện / tệp
+  const cameraInputRef = useRef<HTMLInputElement>(null);  // mở camera để chụp trực tiếp
+  // Chỉ hiện nút chụp ảnh trên thiết bị cảm ứng (điện thoại, máy tính bảng)
+  const [isTouchDevice] = useState<boolean>(() => window.matchMedia('(pointer: coarse)').matches);
 
   // Giải phóng URL tạm khi đổi ảnh khác hoặc đóng modal để không rò rỉ bộ nhớ
   useEffect(() => {
@@ -66,21 +74,39 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
     setCurrentImageUrl(existingUrl);
   };
 
-  const handleImageSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = ''; // cho phép chọn lại đúng file vừa chọn
+    e.target.value = ''; // cho phép chọn/chụp lại đúng ảnh vừa rồi
     if (!file) return;
 
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+    if (!INPUT_IMAGE_TYPES.includes(file.type)) {
       alert('Chỉ hỗ trợ ảnh JPG, PNG, WEBP hoặc GIF!');
       return;
     }
-    if (file.size > MAX_IMAGE_SIZE) {
-      alert('Ảnh vượt quá 5MB, vui lòng chọn ảnh nhỏ hơn!');
-      return;
+
+    setIsProcessingImage(true);
+    try {
+      // Thu nhỏ + nén trước khi upload (ảnh chụp điện thoại thường rất nặng)
+      let processed = file;
+      try {
+        processed = await compressImage(file);
+      } catch {
+        // Không đọc được (vd HEIC trên trình duyệt không hỗ trợ): chỉ dùng tiếp nếu backend nhận được định dạng gốc
+        if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+          alert('Không đọc được định dạng ảnh này. Hãy chọn ảnh JPG hoặc PNG!');
+          return;
+        }
+      }
+
+      if (processed.size > MAX_IMAGE_SIZE) {
+        alert('Ảnh vượt quá 5MB, vui lòng chọn ảnh nhỏ hơn!');
+        return;
+      }
+      setImageFile(processed);
+      setImagePreview(URL.createObjectURL(processed));
+    } finally {
+      setIsProcessingImage(false);
     }
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
   };
 
   // Ưu tiên ảnh vừa chọn, nếu chưa có thì dùng ảnh đã lưu trên server
@@ -151,6 +177,7 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
       poInvoice: '',
       serialNumber: '',
       macAddressWireless: '',
+      macAddressLan: '',
       ipAddress: '',
       computerDescription: '',
       assetStatus: 'In Stock',
@@ -186,6 +213,7 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
         poInvoice: targetAsset.poInvoice || '',
         serialNumber: targetAsset.serialNumber || '',
         macAddressWireless: targetAsset.macAddressWireless || '',
+        macAddressLan: targetAsset.macAddressLan || '',
         ipAddress: targetAsset.ipAddress || '',
         computerDescription: targetAsset.computerDescription || '',
         assetStatus: targetAsset.assetStatus || 'In Stock',
@@ -364,6 +392,7 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                   <th>PO/Invoice</th>
                   <th>Serial Number</th>
                   <th>MAC Address (Wireless)</th>
+                  <th>MAC Address (LAN)</th>
                   <th>IP Address</th>
                   <th>Computer Description</th>
                   <th>Asset Status</th>
@@ -380,13 +409,13 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={19} className="text-center py-4">
+                    <td colSpan={22} className="text-center py-4">
                       <div className="spinner-border spinner-border-sm text-success" role="status"></div> Đang tải dữ liệu...
                     </td>
                   </tr>
                 ) : filteredAssets.length === 0 ? (
                   <tr>
-                    <td colSpan={19} className="text-center py-4 text-muted">
+                    <td colSpan={22} className="text-center py-4 text-muted">
                       {isSearching
                         ? <>Không tìm thấy tài sản nào khớp “{deferredKeyword.trim()}”.</>
                         : 'Không có dữ liệu tài sản nào.'}
@@ -409,6 +438,7 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                         <td>{item.poInvoice}</td>
                         <td>{item.serialNumber}</td>
                         <td>{item.macAddressWireless}</td>
+                        <td>{item.macAddressLan}</td>
                         <td>{item.ipAddress}</td>
                         <td className="text-wrap" style={{ minWidth: '220px' }}>{item.computerDescription}</td>
                         <td>
@@ -473,12 +503,24 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                       )}
                     </div>
 
+                    {isProcessingImage && (
+                      <div
+                        className="position-absolute top-0 start-0 w-100 d-flex align-items-center justify-content-center rounded-4 bg-white bg-opacity-75"
+                        style={{ height: '260px' }}
+                      >
+                        <div className="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                        <span className="small fw-bold">Đang xử lý ảnh...</span>
+                      </div>
+                    )}
+
+                    {/* Nút bút chì: chọn ảnh từ thư viện / tệp */}
                     <button
                       type="button"
                       className="btn btn-primary rounded-circle shadow d-flex align-items-center justify-content-center position-absolute"
                       style={{ width: '42px', height: '42px', bottom: '-12px', right: '-12px' }}
-                      title="Đổi hình ảnh"
-                      aria-label="Đổi hình ảnh"
+                      title="Chọn ảnh từ thư viện"
+                      aria-label="Chọn ảnh từ thư viện"
+                      disabled={isProcessingImage}
                       onClick={() => fileInputRef.current?.click()}
                     >
                       ✏️
@@ -486,10 +528,35 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept={ACCEPTED_IMAGE_TYPES.join(',')}
+                      accept={INPUT_IMAGE_TYPES.join(',')}
                       className="d-none"
                       onChange={handleImageSelected}
                     />
+
+                    {/* Nút máy ảnh: chỉ hiện trên điện thoại / máy tính bảng, mở thẳng camera sau */}
+                    {isTouchDevice && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-success rounded-circle shadow d-flex align-items-center justify-content-center position-absolute"
+                          style={{ width: '42px', height: '42px', bottom: '-12px', right: '38px' }}
+                          title="Chụp ảnh"
+                          aria-label="Chụp ảnh"
+                          disabled={isProcessingImage}
+                          onClick={() => cameraInputRef.current?.click()}
+                        >
+                          📷
+                        </button>
+                        <input
+                          ref={cameraInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="d-none"
+                          onChange={handleImageSelected}
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -576,6 +643,18 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                       <input type="email" className="form-control form-control-sm" value={formData.mailUser} onChange={(e) => setFormData({...formData, mailUser: e.target.value})} />
                     </div>
                     <div className="mb-3">
+                      <label className="form-label small fw-bold text-secondary">MAC Address (Wireless)</label>
+                      <input type="text" className="form-control form-control-sm" placeholder="AA:BB:CC:DD:EE:FF" value={formData.macAddressWireless} onChange={(e) => setFormData({...formData, macAddressWireless: e.target.value})} />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label small fw-bold text-secondary">MAC Address (LAN)</label>
+                      <input type="text" className="form-control form-control-sm" placeholder="AA:BB:CC:DD:EE:FF" value={formData.macAddressLan} onChange={(e) => setFormData({...formData, macAddressLan: e.target.value})} />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label small fw-bold text-secondary">IP Address</label>
+                      <input type="text" className="form-control form-control-sm" placeholder="192.168.1.10" value={formData.ipAddress} onChange={(e) => setFormData({...formData, ipAddress: e.target.value})} />
+                    </div>
+                    <div className="mb-3">
                       <label className="form-label small fw-bold text-secondary">Department</label>
                       <select className="form-select form-select-sm" value={formData.department} onChange={(e) => setFormData({...formData, department: e.target.value})}>
                         <option value="0">0 - Mặc định</option>
@@ -606,7 +685,7 @@ export const AssetManagementPage: React.FC<AssetManagementPageProps> = ({ onLogo
                 </div>
 
                 <div className="d-flex justify-content-center gap-3 mt-4 pt-3 border-top">
-                  <button type="submit" className="btn btn-primary px-5 fw-bold rounded-pill" disabled={isSaving}>{isSaving ? 'Đang lưu...' : 'Save'}</button>
+                  <button type="submit" className="btn btn-primary px-5 fw-bold rounded-pill" disabled={isSaving || isProcessingImage}>{isSaving ? 'Đang lưu...' : 'Save'}</button>
                   <button type="button" className="btn btn-secondary px-5 fw-bold rounded-pill" style={{ backgroundColor: '#6c757d' }} onClick={closeModal}>Cancel</button>
                 </div>
               </form>

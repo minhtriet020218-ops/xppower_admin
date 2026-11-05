@@ -9,6 +9,7 @@ export interface AssetDTO {
   poInvoice: string;
   serialNumber: string;
   macAddressWireless: string;
+  macAddressLan: string;
   ipAddress: string;
   computerDescription: string;
   assetStatus: 'In Stock' | 'In Use'| 'Damaged' | 'Không xác định' | 'Write off' | 'Retired' | 'Backup';

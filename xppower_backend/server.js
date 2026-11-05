@@ -100,6 +100,13 @@ const initDatabase = async () => {
     await pool.query(createTableQuery);
     // Migration: thêm cột lưu đường dẫn hình ảnh (an toàn với bảng đã có dữ liệu)
     await pool.query('ALTER TABLE assets ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)');
+    // Migration: thông tin mạng của thiết bị
+    await pool.query(`
+      ALTER TABLE assets
+        ADD COLUMN IF NOT EXISTS mac_address_wireless VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS mac_address_lan VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS ip_address VARCHAR(100)
+    `);
     
     // Kiểm tra nếu bảng chưa có dữ liệu thì tiến hành seed dữ liệu mẫu
     const checkCount = await pool.query('SELECT COUNT(*) FROM assets');
@@ -164,6 +171,9 @@ const mapAssetRow = (row) => ({
   purchaseDate: row.purchase_date,
   note: row.note,
   imageUrl: row.image_url,
+  macAddressWireless: row.mac_address_wireless,
+  macAddressLan: row.mac_address_lan,
+  ipAddress: row.ip_address,
 });
 
 /**
@@ -189,7 +199,8 @@ app.post('/api/v1/assets', uploadImage, async (req, res) => {
     itAssetCode, hostname, category, product, productionLine,
     financeAssetCode, poInvoice, serialNumber, computerDescription,
     assetStatus, staffCode, assignedTo, mailUser, department,
-    managedBy, managedByGroup, purchaseDate, note
+    managedBy, managedByGroup, purchaseDate, note,
+    macAddressWireless, macAddressLan, ipAddress
   } = req.body || {};
 
   const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
@@ -199,8 +210,9 @@ app.post('/api/v1/assets', uploadImage, async (req, res) => {
       it_asset_code, hostname, category, product, production_line,
       finance_asset_code, po_invoice, serial_number, computer_description,
       asset_status, staff_code, assigned_to, mail_user, department,
-      managed_by, managed_by_group, purchase_date, note, image_url
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+      managed_by, managed_by_group, purchase_date, note, image_url,
+      mac_address_wireless, mac_address_lan, ip_address
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
     RETURNING *;
   `;
 
@@ -208,7 +220,8 @@ app.post('/api/v1/assets', uploadImage, async (req, res) => {
     itAssetCode, hostname, category, product, productionLine,
     financeAssetCode, poInvoice, serialNumber, computerDescription,
     assetStatus || 'In Stock', staffCode, assignedTo, mailUser, department,
-    managedBy, managedByGroup, purchaseDate, note, imageUrl
+    managedBy, managedByGroup, purchaseDate, note, imageUrl,
+    macAddressWireless, macAddressLan, ipAddress
   ];
 
   try {
@@ -231,7 +244,8 @@ app.put('/api/v1/assets/:id', uploadImage, async (req, res) => {
     itAssetCode, hostname, category, product, productionLine,
     financeAssetCode, poInvoice, serialNumber, computerDescription,
     assetStatus, staffCode, assignedTo, mailUser, department,
-    managedBy, managedByGroup, purchaseDate, note
+    managedBy, managedByGroup, purchaseDate, note,
+    macAddressWireless, macAddressLan, ipAddress
   } = req.body || {};
 
   const newImageUrl = req.file ? `/uploads/${req.file.filename}` : null;
@@ -242,8 +256,9 @@ app.put('/api/v1/assets/:id', uploadImage, async (req, res) => {
       finance_asset_code = $6, po_invoice = $7, serial_number = $8, computer_description = $9,
       asset_status = $10, staff_code = $11, assigned_to = $12, mail_user = $13, department = $14,
       managed_by = $15, managed_by_group = $16, purchase_date = $17, note = $18,
-      image_url = COALESCE($19, image_url)
-    WHERE id = $20
+      image_url = COALESCE($19, image_url),
+      mac_address_wireless = $20, mac_address_lan = $21, ip_address = $22
+    WHERE id = $23
     RETURNING *;
   `;
 
@@ -251,7 +266,8 @@ app.put('/api/v1/assets/:id', uploadImage, async (req, res) => {
     itAssetCode, hostname, category, product, productionLine,
     financeAssetCode, poInvoice, serialNumber, computerDescription,
     assetStatus, staffCode, assignedTo, mailUser, department,
-    managedBy, managedByGroup, purchaseDate, note, newImageUrl, id
+    managedBy, managedByGroup, purchaseDate, note, newImageUrl,
+    macAddressWireless, macAddressLan, ipAddress, id
   ];
 
   try {

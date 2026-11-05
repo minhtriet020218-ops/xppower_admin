@@ -1,5 +1,3 @@
-import { API_ENDPOINTS } from './Endpoints';
-
 export interface HttpResponse<T> {
   data: T;
   status: number;
@@ -10,7 +8,8 @@ export interface HttpResponse<T> {
  * Abstraction API Client theo nguyên lý Dependency Inversion (DIP)
  */
 export class AxiosClient {
-  private static baseUrl = 'http://localhost:8080';
+  // Lấy theo địa chỉ đang mở web: trên máy tính là localhost, trên điện thoại là IP của máy tính (vd 192.168.1.20)
+  private static baseUrl = `${window.location.protocol}//${window.location.hostname}:8080`;
 
   static async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
