@@ -3,8 +3,9 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { AssetManagementPage } from './pages/AssetManagementPage';
 import { AuthService } from './services/AuthService';
+import { DepartmentPage } from './pages/DepartmentPage';
 
-const IDLE_TIMEOUT = 5 * 60 * 1000; // 5 phút (tính theo milisecond)
+const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 phút (tính theo milisecond)
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -12,15 +13,15 @@ function App() {
   });
   const [hasLoggedOut, setHasLoggedOut] = useState<boolean>(false);
 
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'assets'>(() => {
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'assets' | 'department'>(() => {
     if (!AuthService.isAuthenticated()) return 'dashboard';
     const savedTab = sessionStorage.getItem('currentTab');
-    return (savedTab === 'assets' || savedTab === 'dashboard') ? savedTab : 'dashboard';
+    return (savedTab === 'assets' || savedTab === 'dashboard' || savedTab === 'department') ? savedTab : 'dashboard';
   });
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleTabChange = (tab: 'dashboard' | 'assets') => {
+  const handleTabChange = (tab: 'dashboard' | 'assets' | 'department') => {
     setCurrentTab(tab);
     sessionStorage.setItem('currentTab', tab);
   };
@@ -40,14 +41,14 @@ function App() {
     setHasLoggedOut(true);
   };
 
-  // --- HÀM ĐẾM THỜI GIAN KHÔNG HOẠT ĐỘNG (AUTO LOGOUT 5 PHÚT) ---
+  // --- HÀM ĐẾM THỜI GIAN KHÔNG HOẠT ĐỘNG (AUTO LOGOUT 10 PHÚT) ---
   useEffect(() => {
     if (!isLoggedIn) return;
 
     const resetTimer = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        alert('Phiên làm việc đã hết hạn do bạn không hoạt động trong 5 phút!');
+        alert('Phiên làm việc đã hết hạn do bạn không hoạt động trong 10 phút!');
         handleLogout();
       }, IDLE_TIMEOUT);
     };
@@ -76,16 +77,14 @@ function App() {
 
   return (
     <div className="app-container">
-      {currentTab === 'dashboard' ? (
-        <DashboardPage 
-          onLogout={handleLogout} 
-          onTabChange={handleTabChange}
-        />
-      ) : (
-        <AssetManagementPage 
-          onLogout={handleLogout} 
-          onTabChange={handleTabChange}
-        />
+      {currentTab === 'dashboard' && (
+        <DashboardPage onLogout={handleLogout} onTabChange={handleTabChange} />
+      )}
+      {currentTab === 'assets' && (
+        <AssetManagementPage onLogout={handleLogout} onTabChange={handleTabChange} />
+      )}
+      {currentTab === 'department' && (
+        <DepartmentPage onLogout={handleLogout} onTabChange={handleTabChange} />
       )}
     </div>
   );

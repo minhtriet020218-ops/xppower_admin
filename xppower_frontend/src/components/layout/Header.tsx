@@ -3,8 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 interface HeaderProps {
   username?: string;
   onLogout?: () => void;
-  activeTab?: 'dashboard' | 'assets';
-  onTabChange?: (tab: 'dashboard' | 'assets') => void;
+  activeTab?: 'dashboard' | 'assets' | 'department';
+  onTabChange?: (tab: 'dashboard' | 'assets' | 'department') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -63,7 +63,20 @@ export const Header: React.FC<HeaderProps> = ({
             >
               Quản Lý Tài sản
             </span>
-            <span className="px-3 py-1">🏛 Bộ phận</span>
+            <div className="dropdown d-inline-block">
+              <span 
+                onClick={() => onTabChange && onTabChange('department')}
+                className={`px-3 py-1 rounded-pill fw-bold ${activeTab === 'department' ? 'bg-light text-dark shadow-sm' : 'text-secondary'}`}
+                style={{ cursor: 'pointer' }}
+              >
+                🏛 Bộ phận
+              </span>
+              <ul className="dropdown-menu shadow border-0 mt-1">
+                <li><a className="dropdown-item fw-semibold" href="#hrm" onClick={() => onTabChange && onTabChange('hrm' as any)}>🏢 HRM (Nhân sự)</a></li>
+                <li><a className="dropdown-item fw-semibold" href="#canteen" onClick={() => onTabChange && onTabChange('canteen' as any)}>🍽️ Canteen (Căng tin)</a></li>
+                <li><a className="dropdown-item fw-semibold" href="#productions" onClick={() => onTabChange && onTabChange('productions' as any)}>⚙️ Productions (Sản xuất)</a></li>
+              </ul>
+            </div>
             <span className="px-3 py-1">Trang cá nhân</span>
             <span className="px-3 py-1">Cài Đặt</span>
           </nav>

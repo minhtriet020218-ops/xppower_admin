@@ -1,0 +1,41 @@
+/* Hiệu ứng hover toàn cục cho mọi nút bấm trên hệ thống */
+button, 
+.btn {
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Hiệu ứng khi rê chuột vào (Hover) */
+button:hover:not(:disabled), 
+.btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Hiệu ứng khi bấm xuống (Active) */
+button:active:not(:disabled), 
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Đảm bảo các nút ở trạng thái vô hiệu hóa (disabled) không đổi màu hover */
+button:disabled, 
+.btn:disabled {
+  filter: none;
+  transform: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Hiệu ứng hover cho tất cả các dạng avatar tròn trên header */
+.rounded-circle {
+  transition: all 0.25s ease-in-out;
+  cursor: pointer;
+}
+
+.rounded-circle:hover {
+  transform: scale(1.08); /* Phóng to nhẹ 8% khi rê chuột */
+  filter: brightness(1.15); /* Làm sáng ảnh hoặc màu nền chữ lên */
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6) !important; /* Tạo hiệu ứng tỏa sáng màu tím phù hợp với màu avatar hiện tại */
+}
