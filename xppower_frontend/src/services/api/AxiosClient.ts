@@ -13,7 +13,7 @@ export class AxiosClient {
 
   static async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
-    const token = localStorage.getItem('accessToken'); // 🔄 Đồng bộ sang localStorage
+    const token = sessionStorage.getItem('accessToken'); // 🔄 Đồng bộ sang sessionStorage
 
     const response = await fetch(`${this.baseUrl}${endpoint}${query}`, {
       method: 'GET',
@@ -32,7 +32,7 @@ export class AxiosClient {
   }
 
   static async post<T>(endpoint: string, body: any): Promise<T> {
-    const token = localStorage.getItem('accessToken'); // 🔄 Đồng bộ sang localStorage
+    const token = sessionStorage.getItem('accessToken');
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
@@ -52,7 +52,7 @@ export class AxiosClient {
   }
 
   static async put<T>(endpoint: string, body: any): Promise<T> {
-    const token = localStorage.getItem('accessToken'); // 🔄 Đồng bộ sang localStorage
+    const token = sessionStorage.getItem('accessToken');
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'PUT',
@@ -72,7 +72,7 @@ export class AxiosClient {
   }
 
   static async delete<T>(endpoint: string, body?: any): Promise<T> {
-    const token = localStorage.getItem('accessToken'); // 🔄 Đồng bộ sang localStorage
+    const token = sessionStorage.getItem('accessToken');
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'DELETE',
@@ -100,7 +100,7 @@ export class AxiosClient {
 
   /** Gửi multipart/form-data. Không tự set Content-Type để trình duyệt tự thêm boundary. */
   private static async sendForm<T>(method: 'POST' | 'PUT', endpoint: string, form: FormData): Promise<T> {
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method,

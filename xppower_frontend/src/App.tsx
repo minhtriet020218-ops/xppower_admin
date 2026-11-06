@@ -1,45 +1,69 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { AssetManagementPage } from './pages/AssetManagementPage';
 import { AuthService } from './services/AuthService';
 
+const IDLE_TIMEOUT = 5 * 60 * 1000; // 5 phút (tính theo milisecond)
+
 function App() {
-  // 1. Quản lý trạng thái đăng nhập
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return AuthService.isAuthenticated();
   });
   const [hasLoggedOut, setHasLoggedOut] = useState<boolean>(false);
 
-  // 2. Quản lý tab hiện tại - Đảm bảo mặc định luôn là 'dashboard' nếu chưa đăng nhập hoặc không có dữ liệu
   const [currentTab, setCurrentTab] = useState<'dashboard' | 'assets'>(() => {
     if (!AuthService.isAuthenticated()) return 'dashboard';
-    const savedTab = localStorage.getItem('currentTab');
+    const savedTab = sessionStorage.getItem('currentTab');
     return (savedTab === 'assets' || savedTab === 'dashboard') ? savedTab : 'dashboard';
   });
 
-  // Đồng bộ tab vào localStorage mỗi khi thay đổi
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleTabChange = (tab: 'dashboard' | 'assets') => {
     setCurrentTab(tab);
-    localStorage.setItem('currentTab', tab);
+    sessionStorage.setItem('currentTab', tab);
   };
 
-  // Xử lý khi đăng nhập thành công: Luôn đưa về 'dashboard' và lưu vào storage
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
     setHasLoggedOut(false);
     setCurrentTab('dashboard');
-    localStorage.setItem('currentTab', 'dashboard');
+    sessionStorage.setItem('currentTab', 'dashboard');
   };
 
-  // Xử lý khi đăng xuất: Xóa sạch token và reset tab về mặc định
   const handleLogout = () => {
     AuthService.logout();
-    localStorage.removeItem('currentTab');
+    sessionStorage.removeItem('currentTab');
     setCurrentTab('dashboard');
     setIsLoggedIn(false);
     setHasLoggedOut(true);
   };
+
+  // --- HÀM ĐẾM THỜI GIAN KHÔNG HOẠT ĐỘNG (AUTO LOGOUT 5 PHÚT) ---
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const resetTimer = () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        alert('Phiên làm việc đã hết hạn do bạn không hoạt động trong 5 phút!');
+        handleLogout();
+      }, IDLE_TIMEOUT);
+    };
+
+    // Các sự kiện tương tác của người dùng
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+
+    // Khởi tạo bộ đếm lần đầu
+    resetTimer();
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [isLoggedIn]);
 
   if (!isLoggedIn) {
     return (
