@@ -1,15 +1,27 @@
 import React from 'react';
 
-export const HrmDashboardPage: React.FC = () => {
+interface HrmDashboardPageProps {
+  onNavigate: (tab: 'dashboard' | 'staff') => void;
+}
+
+export const HrmDashboardPage: React.FC<HrmDashboardPageProps> = ({ onNavigate }) => {
   return (
     <div className="d-flex min-vh-100 bg-light font-sans">
       {/* 1. THANH MENU BÊN TRÁI (SIDEBAR) */}
       <aside className="bg-dark text-white p-3 d-flex flex-column" style={{ width: '260px', minHeight: '100vh' }}>
         <div className="list-group list-group-flush gap-2">
-          <button className="list-group-item list-group-item-action active bg-gradient border-0 rounded-2 py-3 d-flex align-items-center gap-3 fw-bold text-white shadow-sm" style={{ background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)' }}>
+          <button 
+            className="list-group-item list-group-item-action active bg-gradient border-0 rounded-2 py-3 d-flex align-items-center gap-3 fw-bold text-white shadow-sm" 
+            style={{ background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)' }}
+            onClick={() => onNavigate('dashboard')}
+          >
             <span>📊</span> Dashboard
           </button>
-          <button className="list-group-item list-group-item-action bg-transparent text-white-50 border-0 rounded-2 py-2 d-flex align-items-center gap-3">
+          <button 
+            className="list-group-item list-group-item-action bg-transparent text-white-50 border-0 rounded-2 py-2 d-flex align-items-center gap-3"
+            onClick={() => onNavigate('staff')}
+            style={{ cursor: 'pointer' }}
+          >
             <span>👥</span> Quản Lý Nhân Sự
           </button>
           <button className="list-group-item list-group-item-action bg-transparent text-white-50 border-0 rounded-2 py-2 d-flex align-items-center gap-3">
@@ -43,7 +55,6 @@ export const HrmDashboardPage: React.FC = () => {
 
         {/* 4 THẺ THỐNG KÊ (METRIC CARDS) */}
         <div className="row g-4 mb-4">
-          {/* Card 1: Tổng nhân viên */}
           <div className="col-12 col-md-6 col-xl-3">
             <div className="card border-0 shadow-sm text-white p-3 rounded-4" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', minHeight: '140px' }}>
               <div className="small text-white-50 fw-bold">Tổng Nhân Viên</div>
@@ -51,8 +62,6 @@ export const HrmDashboardPage: React.FC = () => {
               <div className="small text-white-50">Tất cả bộ phận</div>
             </div>
           </div>
-
-          {/* Card 2: Quên chấm vào */}
           <div className="col-12 col-md-6 col-xl-3">
             <div className="card border-0 shadow-sm text-white p-3 rounded-4" style={{ backgroundColor: '#d97706', minHeight: '140px' }}>
               <div className="small text-white-50 fw-bold">Quên Chấm Vào</div>
@@ -60,8 +69,6 @@ export const HrmDashboardPage: React.FC = () => {
               <div className="small text-white-50">Tháng này</div>
             </div>
           </div>
-
-          {/* Card 3: Quên chấm ra */}
           <div className="col-12 col-md-6 col-xl-3">
             <div className="card border-0 shadow-sm text-white p-3 rounded-4" style={{ backgroundColor: '#dc2626', minHeight: '140px' }}>
               <div className="small text-white-50 fw-bold">Quên Chấm Ra</div>
@@ -69,10 +76,12 @@ export const HrmDashboardPage: React.FC = () => {
               <div className="small text-white-50">Tháng này</div>
             </div>
           </div>
-
-          {/* Card 4: Quản lý nhân viên - Gán ca */}
           <div className="col-12 col-md-6 col-xl-3">
-            <div className="card border-0 shadow-sm text-white p-3 rounded-4 position-relative overflow-hidden" style={{ backgroundColor: '#059669', minHeight: '140px' }}>
+            <div 
+              className="card border-0 shadow-sm text-white p-3 rounded-4 position-relative overflow-hidden" 
+              style={{ backgroundColor: '#059669', minHeight: '140px', cursor: 'pointer' }}
+              onClick={() => onNavigate('staff')}
+            >
               <div className="small text-white-50 fw-bold">Quản Lý Nhân Viên</div>
               <div className="fs-5 fw-bold my-1">Gán ca • Gán quản lý</div>
               <div className="small text-white-50">Mở nhanh mục Nhân sự</div>
@@ -81,7 +90,7 @@ export const HrmDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* KHUNG BIỂU ĐỒ & THỐNG KÊ CHI TIẾT */}
+        {/* KHUNG BIỂU ĐỒ */}
         <div className="row g-4">
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm p-4 rounded-4 h-100 bg-white">
@@ -91,7 +100,6 @@ export const HrmDashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
-
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm p-4 rounded-4 h-100 bg-white">
               <h5 className="fw-bold text-secondary mb-3">📊 Quên Chấm Công Theo Ngày</h5>

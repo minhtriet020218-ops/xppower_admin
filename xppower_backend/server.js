@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const staffController = require('./staffController');
 
 const app = express();
 const PORT = 8080;
@@ -374,6 +375,12 @@ app.use((err, req, res, next) => {
   console.error('❌ Lỗi chưa xử lý:', err);
   res.status(err.status || 500).json({ message: 'Lỗi hệ thống, vui lòng xem log của backend.' });
 });
+
+// --- CÁC API ROUTE CHO QUẢN LÝ NHÂN SỰ (HRM) ---
+app.get('/api/v1/staff', staffController.getStaffList);
+app.post('/api/v1/staff', staffController.createStaff);
+app.put('/api/v1/staff/:id', staffController.updateStaff);
+app.delete('/api/v1/staff/:id', staffController.deleteStaff);
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend server & PostgreSQL đang chạy tại: http://localhost:${PORT}`);

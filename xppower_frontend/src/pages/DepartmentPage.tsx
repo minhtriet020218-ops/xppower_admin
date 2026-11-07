@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Header } from '../components/layout/Header';
 import { HrmDashboardPage } from './departments/hrm/HrmDashboardPage';
+import { HrmStaffPage } from './departments/hrm/HrmStaffPage';
 
 interface DepartmentPageProps {
   onLogout?: () => void;
@@ -8,20 +9,19 @@ interface DepartmentPageProps {
 }
 
 export const DepartmentPage: React.FC<DepartmentPageProps> = ({ onLogout, onTabChange }) => {
-  // Quản lý xem đang ở bộ phận nào: 'hrm' | 'canteen' | 'productions'
   const [activeDept, setActiveDept] = useState<'hrm' | 'canteen' | 'productions'>('hrm');
+  const [hrmSubTab, setHrmSubTab] = useState<'dashboard' | 'staff'>('dashboard');
 
   return (
     <div className="bg-light min-vh-100 font-sans">
-      {/* Header chung của hệ thống */}
       <Header onLogout={onLogout} activeTab="department" onTabChange={onTabChange} />
 
-      {/* Thanh chọn nhanh các bộ phận (Dropdown hoặc Tabs chuyển đổi) */}
+      {/* Thanh chọn nhanh bộ phận */}
       <div className="bg-white border-bottom px-4 py-2 d-flex gap-3 align-items-center shadow-sm">
         <span className="fw-bold text-muted small">KHU VỰC BỘ PHẬN:</span>
         <button 
           className={`btn btn-sm px-3 fw-bold rounded-pill ${activeDept === 'hrm' ? 'btn-primary' : 'btn-light'}`}
-          onClick={() => setActiveDept('hrm')}
+          onClick={() => { setActiveDept('hrm'); setHrmSubTab('dashboard'); }}
         >
           🏢 HRM (Nhân sự)
         </button>
@@ -39,9 +39,14 @@ export const DepartmentPage: React.FC<DepartmentPageProps> = ({ onLogout, onTabC
         </button>
       </div>
 
-      {/* Hiển thị nội dung tương ứng theo bộ phận được chọn */}
       <div className="department-content">
-        {activeDept === 'hrm' && <HrmDashboardPage />}
+        {activeDept === 'hrm' && (
+          <div>
+            {hrmSubTab === 'dashboard' && <HrmDashboardPage onNavigate={(tab) => setHrmSubTab(tab)} />}
+            {hrmSubTab === 'staff' && <HrmStaffPage onNavigate={(tab) => setHrmSubTab(tab)} />}
+          </div>
+        )}
+
         {activeDept === 'canteen' && (
           <div className="p-5 text-center text-muted">
             <h3>🍽️ Trang quản lý Canteen đang được phát triển...</h3>
