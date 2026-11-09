@@ -86,6 +86,9 @@ function App() {
       {currentTab === 'department' && (
         <DepartmentPage onLogout={handleLogout} onTabChange={handleTabChange} />
       )}
+      {currentTab === 'department' && (
+        <DepartmentPage onLogout={handleLogout} onTabChange={handleTabChange} />
+      )}
     </div>
   );
 }

@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { Header } from '../components/layout/Header';
 import { HrmDashboardPage } from './departments/hrm/HrmDashboardPage';
+import { HrmStaffPage } from './departments/hrm/HrmStaffPage';
+import { HrmPlaceholderPage } from './departments/hrm/HrmAttendancePage';
 import { CanteenManagementPage } from './departments/canteen/CanteenManagementPage';
 import { ProductionDashboardPage } from './departments/productions/ProductionDashboardPage';
 import { ProductionAssetMapPage } from './departments/productions/ProductionAssetMapPage';
+
+export type HrmSubTabType = 'dashboard' | 'staff' | 'attendance' | 'evaluation' | 'leave' | 'report';
 
 interface DepartmentPageProps {
   onLogout?: () => void;
@@ -11,9 +15,12 @@ interface DepartmentPageProps {
 }
 
 export const DepartmentPage: React.FC<DepartmentPageProps> = ({ onLogout, onTabChange }) => {
-  const [activeDept, setActiveDept] = useState<'hrm' | 'canteen' | 'productions'>('productions');
+  const [activeDept, setActiveDept] = useState<'hrm' | 'canteen' | 'productions'>('hrm');
   
-  // Quản lý tab con của Productions ('dashboard' | 'lines' | 'map' | 'staff')
+  // Quản lý tab con của HRM
+  const [hrmSubTab, setHrmSubTab] = useState<HrmSubTabType>('dashboard');
+  
+  // Quản lý tab con của Productions
   const [prodSubTab, setProdSubTab] = useState<'dashboard' | 'lines' | 'map' | 'staff'>('dashboard');
 
   return (
@@ -25,7 +32,7 @@ export const DepartmentPage: React.FC<DepartmentPageProps> = ({ onLogout, onTabC
         <span className="fw-bold text-muted small">KHU VỰC BỘ PHẬN:</span>
         <button 
           className={`btn btn-sm px-3 fw-bold rounded-pill ${activeDept === 'hrm' ? 'btn-primary' : 'btn-light'}`}
-          onClick={() => setActiveDept('hrm')}
+          onClick={() => { setActiveDept('hrm'); setHrmSubTab('dashboard'); }}
         >
           🏢 HRM (Nhân sự)
         </button>
@@ -44,10 +51,19 @@ export const DepartmentPage: React.FC<DepartmentPageProps> = ({ onLogout, onTabC
       </div>
 
       <div className="department-content">
-        {activeDept === 'hrm' && <HrmDashboardPage onNavigate={() => {}} />}
+        {activeDept === 'hrm' && (
+          <>
+            {hrmSubTab === 'dashboard' && <HrmDashboardPage onNavigate={(tab) => setHrmSubTab(tab)} />}
+            {hrmSubTab === 'staff' && <HrmStaffPage onNavigate={(tab) => setHrmSubTab(tab)} />}
+            {hrmSubTab === 'attendance' && <HrmPlaceholderPage title="Quản Lý Chấm Công" icon="⏰" onNavigate={(tab) => setHrmSubTab(tab)} />}
+            {hrmSubTab === 'evaluation' && <HrmPlaceholderPage title="Đánh Giá Nhân Sự" icon="⭐" onNavigate={(tab) => setHrmSubTab(tab)} />}
+            {hrmSubTab === 'leave' && <HrmPlaceholderPage title="Quản Lý Nghỉ Phép" icon="📅" onNavigate={(tab) => setHrmSubTab(tab)} />}
+            {hrmSubTab === 'report' && <HrmPlaceholderPage title="Báo Cáo Nhân Sự" icon="📋" onNavigate={(tab) => setHrmSubTab(tab)} />}
+          </>
+        )}
+
         {activeDept === 'canteen' && <CanteenManagementPage onLogout={onLogout} onTabChange={onTabChange} />}
         
-        {/* Render các trang con của Productions dựa vào prodSubTab */}
         {activeDept === 'productions' && (
           <>
             {prodSubTab === 'dashboard' && (
@@ -58,7 +74,6 @@ export const DepartmentPage: React.FC<DepartmentPageProps> = ({ onLogout, onTabC
             )}
             {(prodSubTab === 'lines' || prodSubTab === 'staff') && (
               <div className="d-flex min-vh-100 bg-light">
-                {/* Thanh sidebar giữ nguyên để người dùng có thể bấm quay lại các tab khác */}
                 <aside className="p-3 d-flex flex-column text-white" style={{ width: '240px', minHeight: '100vh', backgroundColor: '#1E2337' }}>
                   <div className="fw-bold fs-6 mb-4 d-flex align-items-center gap-2 px-2"><span>🏭</span> Productions</div>
                   <div className="list-group list-group-flush gap-2">
