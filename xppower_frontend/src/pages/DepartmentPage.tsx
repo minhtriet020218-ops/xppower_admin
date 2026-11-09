@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Header } from '../components/layout/Header';
 import { HrmDashboardPage } from './departments/hrm/HrmDashboardPage';
-import { HrmStaffPage } from './departments/hrm/HrmStaffPage';
+import { CanteenManagementPage } from './departments/canteen/CanteenManagementPage';
+import { ProductionDashboardPage } from './departments/productions/ProductionDashboardPage';
+import { ProductionAssetMapPage } from './departments/productions/ProductionAssetMapPage';
 
 interface DepartmentPageProps {
   onLogout?: () => void;
@@ -9,8 +11,10 @@ interface DepartmentPageProps {
 }
 
 export const DepartmentPage: React.FC<DepartmentPageProps> = ({ onLogout, onTabChange }) => {
-  const [activeDept, setActiveDept] = useState<'hrm' | 'canteen' | 'productions'>('hrm');
-  const [hrmSubTab, setHrmSubTab] = useState<'dashboard' | 'staff'>('dashboard');
+  const [activeDept, setActiveDept] = useState<'hrm' | 'canteen' | 'productions'>('productions');
+  
+  // Quản lý tab con của Productions ('dashboard' | 'lines' | 'map' | 'staff')
+  const [prodSubTab, setProdSubTab] = useState<'dashboard' | 'lines' | 'map' | 'staff'>('dashboard');
 
   return (
     <div className="bg-light min-vh-100 font-sans">
@@ -21,7 +25,7 @@ export const DepartmentPage: React.FC<DepartmentPageProps> = ({ onLogout, onTabC
         <span className="fw-bold text-muted small">KHU VỰC BỘ PHẬN:</span>
         <button 
           className={`btn btn-sm px-3 fw-bold rounded-pill ${activeDept === 'hrm' ? 'btn-primary' : 'btn-light'}`}
-          onClick={() => { setActiveDept('hrm'); setHrmSubTab('dashboard'); }}
+          onClick={() => setActiveDept('hrm')}
         >
           🏢 HRM (Nhân sự)
         </button>
@@ -40,22 +44,39 @@ export const DepartmentPage: React.FC<DepartmentPageProps> = ({ onLogout, onTabC
       </div>
 
       <div className="department-content">
-        {activeDept === 'hrm' && (
-          <div>
-            {hrmSubTab === 'dashboard' && <HrmDashboardPage onNavigate={(tab) => setHrmSubTab(tab)} />}
-            {hrmSubTab === 'staff' && <HrmStaffPage onNavigate={(tab) => setHrmSubTab(tab)} />}
-          </div>
-        )}
-
-        {activeDept === 'canteen' && (
-          <div className="p-5 text-center text-muted">
-            <h3>🍽️ Trang quản lý Canteen đang được phát triển...</h3>
-          </div>
-        )}
+        {activeDept === 'hrm' && <HrmDashboardPage onNavigate={() => {}} />}
+        {activeDept === 'canteen' && <CanteenManagementPage onLogout={onLogout} onTabChange={onTabChange} />}
+        
+        {/* Render các trang con của Productions dựa vào prodSubTab */}
         {activeDept === 'productions' && (
-          <div className="p-5 text-center text-muted">
-            <h3>⚙️ Trang quản lý Productions đang được phát triển...</h3>
-          </div>
+          <>
+            {prodSubTab === 'dashboard' && (
+              <ProductionDashboardPage activeSubTab={prodSubTab} onNavigate={(tab) => setProdSubTab(tab)} />
+            )}
+            {prodSubTab === 'map' && (
+              <ProductionAssetMapPage activeSubTab={prodSubTab} onNavigate={(tab) => setProdSubTab(tab)} />
+            )}
+            {(prodSubTab === 'lines' || prodSubTab === 'staff') && (
+              <div className="d-flex min-vh-100 bg-light">
+                {/* Thanh sidebar giữ nguyên để người dùng có thể bấm quay lại các tab khác */}
+                <aside className="p-3 d-flex flex-column text-white" style={{ width: '240px', minHeight: '100vh', backgroundColor: '#1E2337' }}>
+                  <div className="fw-bold fs-6 mb-4 d-flex align-items-center gap-2 px-2"><span>🏭</span> Productions</div>
+                  <div className="list-group list-group-flush gap-2">
+                    <button className="list-group-item list-group-item-action border-0 rounded-3 py-2 px-3 text-white bg-transparent" onClick={() => setProdSubTab('dashboard')}>📊 Dashboard</button>
+                    <button className="list-group-item list-group-item-action border-0 rounded-3 py-2 px-3 text-white bg-transparent" onClick={() => setProdSubTab('lines')}>🏭 Production Lines</button>
+                    <button className="list-group-item list-group-item-action border-0 rounded-3 py-2 px-3 text-white bg-transparent" onClick={() => setProdSubTab('map')}>🌳 Sơ đồ quản lý tài sản line</button>
+                    <button className="list-group-item list-group-item-action border-0 rounded-3 py-2 px-3 text-white bg-transparent" onClick={() => setProdSubTab('staff')}>👥 Quản lý nhân sự</button>
+                  </div>
+                </aside>
+                <main className="flex-grow-1 p-5 text-center text-muted d-flex align-items-center justify-content-center">
+                  <div>
+                    <h3>⚙️ Trang quản lý đang được phát triển...</h3>
+                    <button className="btn btn-primary mt-3" onClick={() => setProdSubTab('dashboard')}>Quay về Dashboard</button>
+                  </div>
+                </main>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

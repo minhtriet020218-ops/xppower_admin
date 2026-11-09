@@ -1,19 +1,10 @@
-const { Pool } = require('pg');
-
-// Kết nối PostgreSQL (sử dụng thông tin cấu hình database xppower_bd của bạn)
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'xppower_bd',
-  password: '062462862', // Thay bằng mật khẩu database của bạn
-  port: 5432,
-});
+// xppower_backend/staffController.js
+const pool = require('./db');
 
 // 1. Lấy danh sách nhân viên
 exports.getStaffList = async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM staff ORDER BY id DESC');
-    // Map lại tên cột database sang chuẩn camelCase cho Frontend dễ đọc
     const staffList = result.rows.map(row => ({
       id: String(row.id),
       staffCode: row.staff_code,
@@ -27,7 +18,7 @@ exports.getStaffList = async (req, res) => {
     res.json(staffList);
   } catch (err) {
     console.error('Lỗi lấy danh sách nhân viên:', err);
-    res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    res.status(500).json({ message: 'Lỗi máy chủ nội bộ: ' + err.message });
   }
 };
 
@@ -60,7 +51,7 @@ exports.createStaff = async (req, res) => {
   }
 };
 
-// 3. Cập nhật thông tin / gán ca nhân viên
+// 3. Cập nhật nhân viên
 exports.updateStaff = async (req, res) => {
   const { id } = req.params;
   const { staffCode, fullName, position, department, email, hireDate, shift } = req.body;
