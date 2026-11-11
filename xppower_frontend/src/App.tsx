@@ -4,8 +4,9 @@ import { DashboardPage } from './pages/DashboardPage';
 import { AssetManagementPage } from './pages/AssetManagementPage';
 import { AuthService } from './services/AuthService';
 import { DepartmentPage } from './pages/DepartmentPage';
+import { UserManagementSettingPage } from './pages/UserManagementSettingPage'; // Import trang Cài đặt
 
-const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 phút (tính theo milisecond)
+const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 phút
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -13,15 +14,16 @@ function App() {
   });
   const [hasLoggedOut, setHasLoggedOut] = useState<boolean>(false);
 
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'assets' | 'department'>(() => {
+  // Thêm 'settings' vào union type của currentTab
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'assets' | 'department' | 'settings'>(() => {
     if (!AuthService.isAuthenticated()) return 'dashboard';
     const savedTab = sessionStorage.getItem('currentTab');
-    return (savedTab === 'assets' || savedTab === 'dashboard' || savedTab === 'department') ? savedTab : 'dashboard';
+    return (savedTab === 'assets' || savedTab === 'dashboard' || savedTab === 'department' || savedTab === 'settings') ? savedTab : 'dashboard';
   });
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleTabChange = (tab: 'dashboard' | 'assets' | 'department') => {
+  const handleTabChange = (tab: 'dashboard' | 'assets' | 'department' | 'settings') => {
     setCurrentTab(tab);
     sessionStorage.setItem('currentTab', tab);
   };
@@ -41,7 +43,6 @@ function App() {
     setHasLoggedOut(true);
   };
 
-  // --- HÀM ĐẾM THỜI GIAN KHÔNG HOẠT ĐỘNG (AUTO LOGOUT 10 PHÚT) ---
   useEffect(() => {
     if (!isLoggedIn) return;
 
@@ -53,11 +54,8 @@ function App() {
       }, IDLE_TIMEOUT);
     };
 
-    // Các sự kiện tương tác của người dùng
     const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
     events.forEach(event => window.addEventListener(event, resetTimer));
-
-    // Khởi tạo bộ đếm lần đầu
     resetTimer();
 
     return () => {
@@ -86,8 +84,9 @@ function App() {
       {currentTab === 'department' && (
         <DepartmentPage onLogout={handleLogout} onTabChange={handleTabChange} />
       )}
-      {currentTab === 'department' && (
-        <DepartmentPage onLogout={handleLogout} onTabChange={handleTabChange} />
+      {/* Thêm điều kiện render trang Cài Đặt (UserManagementSettingPage) */}
+      {currentTab === 'settings' && (
+        <UserManagementSettingPage />
       )}
     </div>
   );

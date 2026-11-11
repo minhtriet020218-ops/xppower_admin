@@ -5,7 +5,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'xppower_db', // Thống nhất dùng chung một tên database
-  password: '062462862',
+  password: '123',
   port: 5432,
 });
 

@@ -11,7 +11,7 @@ export type HrmSubTabType = 'dashboard' | 'staff' | 'attendance' | 'evaluation' 
 
 interface DepartmentPageProps {
   onLogout?: () => void;
-  onTabChange?: (tab: 'dashboard' | 'assets' | 'department') => void;
+  onTabChange?: (tab: 'dashboard' | 'assets' | 'department' | 'settings') => void;
 }
 
 export const DepartmentPage: React.FC<DepartmentPageProps> = ({ onLogout, onTabChange }) => {

@@ -3,8 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 interface HeaderProps {
   username?: string;
   onLogout?: () => void;
-  activeTab?: 'dashboard' | 'assets' | 'department';
-  onTabChange?: (tab: 'dashboard' | 'assets' | 'department') => void;
+  activeTab?: 'dashboard' | 'assets' | 'department' | 'settings';
+  onTabChange?: (tab: 'dashboard' | 'assets' | 'department' | 'settings') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -16,7 +16,6 @@ export const Header: React.FC<HeaderProps> = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Lấy username từ localStorage nếu không được truyền trực tiếp qua props
   const currentUsername = username || localStorage.getItem('username') || 'Admin';
   const firstLetter = currentUsername.charAt(0).toUpperCase();
 
@@ -35,7 +34,6 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="bg-white shadow-sm px-4 py-2 border-bottom">
       <div className="container-fluid d-flex justify-content-between align-items-center">
-        {/* Left Section: Chi nhánh, Logo, Title & Nav */}
         <div className="d-flex align-items-center gap-3">
           <div className="d-flex flex-column border-end pe-3">
             <span className="text-muted" style={{ fontSize: '10px', fontWeight: 'bold' }}>CHI NHÁNH HIỆN TẠI</span>
@@ -49,7 +47,6 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="fw-bold fs-5">Asset Management</span>
           </div>
 
-          {/* THANH ĐIỀU HƯỚNG (NAVBAR) ĐÃ ĐƯỢC GẮN SỰ KIỆN CLICK CHUYỂN TAB */}
           <nav className="ms-3 d-none d-lg-flex gap-1 text-secondary small align-items-center" style={{ cursor: 'pointer' }}>
             <span 
               onClick={() => onTabChange && onTabChange('dashboard')}
@@ -63,26 +60,24 @@ export const Header: React.FC<HeaderProps> = ({
             >
               Quản Lý Tài sản
             </span>
-            <div className="dropdown d-inline-block">
-              <span 
-                onClick={() => onTabChange && onTabChange('department')}
-                className={`px-3 py-1 rounded-pill fw-bold ${activeTab === 'department' ? 'bg-light text-dark shadow-sm' : 'text-secondary'}`}
-                style={{ cursor: 'pointer' }}
-              >
-                🏛 Bộ phận
-              </span>
-              <ul className="dropdown-menu shadow border-0 mt-1">
-                <li><a className="dropdown-item fw-semibold" href="#hrm" onClick={() => onTabChange && onTabChange('hrm' as any)}>🏢 HRM (Nhân sự)</a></li>
-                <li><a className="dropdown-item fw-semibold" href="#canteen" onClick={() => onTabChange && onTabChange('canteen' as any)}>🍽️ Canteen (Căng tin)</a></li>
-                <li><a className="dropdown-item fw-semibold" href="#productions" onClick={() => onTabChange && onTabChange('productions' as any)}>⚙️ Productions (Sản xuất)</a></li>
-              </ul>
-            </div>
+            <span 
+              onClick={() => onTabChange && onTabChange('department')}
+              className={`px-3 py-1 rounded-pill fw-bold ${activeTab === 'department' ? 'bg-light text-dark shadow-sm' : 'text-secondary'}`}
+            >
+              🏛 Bộ phận
+            </span>
             <span className="px-3 py-1">Trang cá nhân</span>
-            <span className="px-3 py-1">Cài Đặt</span>
+            
+            {/* Gắn sự kiện chuyển sang trang Settings */}
+            <span 
+              onClick={() => onTabChange && onTabChange('settings')}
+              className={`px-3 py-1 rounded-pill fw-bold ${activeTab === 'settings' ? 'bg-light text-dark shadow-sm' : 'text-secondary'}`}
+            >
+              ⚙️ Cài Đặt
+            </span>
           </nav>
         </div>
 
-        {/* Right Section: User & Dropdown */}
         <div className="d-flex align-items-center gap-3">
           <div className="text-end small lh-sm d-none d-sm-block">
             <div className="fw-bold text-dark">{currentUsername}</div>
