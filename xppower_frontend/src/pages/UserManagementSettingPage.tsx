@@ -10,6 +10,7 @@ interface User {
   id: string;
   username: string;
   fullName: string;
+  email: string;
   department: string;
   role: 'ADMIN' | 'USER';
   status: 'Hoạt động' | 'Đã khóa';
@@ -25,7 +26,7 @@ type SettingTabType = 'users' | 'branches' | 'history' | 'general' | 'security';
 
 export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps> = ({ onLogout, onTabChange }) => {
   // State quản lý tab đang chọn trong Trung tâm cài đặt: 'users' | 'branches' | 'history'
-  const [activeTab, setActiveTab] = useState<'users' | 'branches' | 'history'>('users');
+  const [activeTab, setActiveTab] = useState<SettingTabType>('users');
 
   // State form tạo/sửa người dùng
   const [employeeCode, setEmployeeCode] = useState('');
@@ -56,6 +57,7 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
       id: '1',
       username: '23/02/2006',
       fullName: 'TRẦN THỊ KIM NGÂN',
+      email: '',
       department: 'PS Production O...',
       role: 'USER',
       status: 'Hoạt động',
@@ -101,6 +103,7 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
       id: Date.now().toString(),
       username: employeeCode,
       fullName: fullName,
+      email: email,
       department: department,
       role: isAdmin ? 'ADMIN' : 'USER',
       status: 'Hoạt động',

@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const staffController = require('./staffController');
+const userRoutes = require('./userController');
 
 const app = express();
 const PORT = 8080;
@@ -88,6 +89,8 @@ const initDatabase = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+    
+
     CREATE TABLE IF NOT EXISTS staff (
       id SERIAL PRIMARY KEY,
       staff_code VARCHAR(50) UNIQUE NOT NULL,
@@ -97,6 +100,20 @@ const initDatabase = async () => {
       email VARCHAR(150),
       hire_date VARCHAR(50),
       shift VARCHAR(50),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- 🟢 TẠO BẢNG USERS CHO TRUNG TÂM CÀI ĐẶT & PHÂN QUYỀN
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      username VARCHAR(50) UNIQUE NOT NULL,
+      full_name VARCHAR(150) NOT NULL,
+      email VARCHAR(150),
+      department VARCHAR(100),
+      role VARCHAR(20) NOT NULL DEFAULT 'USER',
+      status VARCHAR(20) NOT NULL DEFAULT 'Hoạt động',
+      password_hash VARCHAR(255) NOT NULL,
+      permissions JSONB DEFAULT '[]'::jsonb,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
@@ -149,6 +166,7 @@ const initDatabase = async () => {
   } catch (err) {
     console.error('❌ Lỗi khởi tạo database:', err);
   }
+  
 };
 initDatabase();
 
@@ -557,6 +575,12 @@ app.get('/api/v1/staff', staffController.getStaffList);
 app.post('/api/v1/staff', staffController.createStaff);
 app.put('/api/v1/staff/:id', staffController.updateStaff);
 app.delete('/api/v1/staff/:id', staffController.deleteStaff);
+
+// --- CÁC API ROUTE CHO QUẢN LÝ NGƯỜI DÙNG (USER MANAGEMENT) ---
+app.get('/api/v1/users', userController.getUsers);
+app.post('/api/v1/users', userController.createUser);
+app.put('/api/v1/users/:id', userController.updateUser);
+app.delete('/api/v1/users/:id', userController.deleteUser);
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend server & PostgreSQL đang chạy tại: http://localhost:${PORT}`);
