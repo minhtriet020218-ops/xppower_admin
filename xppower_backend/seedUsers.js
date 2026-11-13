@@ -1,26 +1,10 @@
-// xppower_backend/seedUsers.js
 const pool = require('./db');
-
-const departments = ['PS Production', 'Engineering', 'FINANCE', 'CUSTOMS', 'QA/QC', 'Canteen', 'HRM'];
-const firstNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Đặng', 'Bùi'];
-const middleNames = ['Văn', 'Thị', 'Hữu', 'Đình', 'Công', 'Ngọc', 'Minh', 'Thanh', 'Xuân', 'Hoài'];
-const lastNames = ['An', 'Bình', 'Cường', 'Dũng', 'Hà', 'Hùng', 'Khang', 'Long', 'Nam', 'Phúc', 'Quân', 'Sơn', 'Tùng', 'Vinh', 'Yến', 'Ngân'];
-
-const defaultPermissions = [
-  { tabName: 'Trang chủ', permission: 'View + Edit' },
-  { tabName: 'Quản lý tài sản', permission: 'View + Edit' },
-  { tabName: 'Trang cá nhân', permission: 'View + Edit' },
-  { tabName: 'Cài đặt', permission: 'View only' },
-  { tabName: 'HRM', permission: 'View + Edit' },
-  { tabName: 'Production', permission: 'View + Edit' },
-  { tabName: 'Canteen', permission: 'Không được phép' }
-];
 
 async function seedUsers() {
   try {
-    console.log('🔄 Đang tạo 50 user mẫu vào PostgreSQL...');
+    console.log('🔄 Đang tạo dữ liệu mẫu user dạng VNxxxxxxx...');
 
-    // Tạo tài khoản Admin mặc định đầu tiên
+    // Tạo tài khoản Admin đặc biệt
     await pool.query(`
       INSERT INTO users (username, full_name, email, department, role, status, password_hash, permissions)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -33,35 +17,35 @@ async function seedUsers() {
       'ADMIN', 
       'Hoạt động', 
       '123456', 
-      JSON.stringify(defaultPermissions)
+      JSON.stringify([])
     ]);
 
-    // Tạo ngẫu nhiên 49 user tiếp theo
-    for (let i = 1; i <= 49; i++) {
-      const staffCode = 'VN' + String(2612000 + i);
-      const fullName = `${firstNames[i % firstNames.length]} ${middleNames[i % middleNames.length]} ${lastNames[i % lastNames.length]}`;
-      const email = `${staffCode.toLowerCase()}@xppower.com`;
-      const department = departments[i % departments.length];
-      const role = i <= 5 ? 'ADMIN' : 'USER'; // 5 user đầu là Admin, còn lại là User
-      const status = i === 13 ? 'Đã khóa' : 'Hoạt động'; // Giả lập 1 user bị khóa
+    // Tạo ngẫu nhiên các user với định dạng username là VN + 7 chữ số (VD: VN0348934)
+    for (let i = 1; i <= 20; i++) {
+      // Tạo chuỗi số ngẫu nhiên 7 chữ số giống ý bạn (VD: VN0348934)
+      const randomNum = Math.floor(1000000 + Math.random() * 9000000);
+      const username = `VN${randomNum}`; 
+      const fullName = `Nhân Viên Test ${i}`;
+      const email = `${username.toLowerCase()}@xppower.com`;
+      const role = i <= 3 ? 'ADMIN' : 'USER'; // 3 user đầu tiên sẽ có quyền ADMIN để bạn test đăng nhập
 
       await pool.query(`
         INSERT INTO users (username, full_name, email, department, role, status, password_hash, permissions)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (username) DO NOTHING;
       `, [
-        staffCode,
+        username,
         fullName,
         email,
-        department,
+        'PS Production',
         role,
-        status,
-        '123456',
-        JSON.stringify(defaultPermissions)
+        'Hoạt động',
+        '123456', // Mật khẩu mặc định là 123456
+        JSON.stringify([])
       ]);
     }
 
-    console.log('✅ Đã tạo thành công 50 user mẫu vào database!');
+    console.log('✅ Đã tạo xong các user mẫu (bao gồm cả Admin mang định dạng VNxxxxxxx)!');
     process.exit(0);
   } catch (err) {
     console.error('❌ Lỗi seed user:', err);

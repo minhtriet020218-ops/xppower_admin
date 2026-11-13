@@ -229,15 +229,33 @@ app.get('/api/v1/health', (req, res) => res.json({ status: 'ok', imageUpload: tr
 /**
  * 1. API Đăng nhập
  */
-app.post('/api/v1/auth/login', (req, res) => {
+app.post('/api/v1/auth/login', async (req, res) => {
   const { username, passwordHash } = req.body;
-  if (username === 'admin' && (passwordHash === 'admin123' || passwordHash)) {
+  try {
+    // Truy vấn tìm user trong database
+    const result = await pool.query('SELECT * FROM users WHERE username = $1 AND status = $2', [username, 'Hoạt động']);
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ message: 'Tên đăng nhập không tồn tại hoặc tài khoản đã bị khóa!' });
+    }
+
+    const user = result.rows[0];
+
+    // Kiểm tra mật khẩu (có thể so sánh trực tiếp hoặc qua mã hóa tùy hệ thống của bạn)
+    if (user.password_hash !== passwordHash && passwordHash !== '123456') { // Cho phép mật khẩu 123456 hoặc password_hash trong db
+      return res.status(401).json({ message: 'Mật khẩu không chính xác!' });
+    }
+
     return res.status(200).json({
-      token: 'mock_jwt_token_from_real_backend_xyz987',
-      username: username
+      token: 'mock_jwt_token_' + user.username + '_xyz987',
+      username: user.username,
+      fullName: user.full_name,
+      role: user.role
     });
+  } catch (err) {
+    console.error('Lỗi đăng nhập:', err);
+    return res.status(500).json({ message: 'Lỗi server khi đăng nhập' });
   }
-  return res.status(401).json({ message: 'Tên đăng nhập hoặc mật khẩu không chính xác!' });
 });
 
 // Map dòng DB (snake_case) sang DTO của Frontend (camelCase)
