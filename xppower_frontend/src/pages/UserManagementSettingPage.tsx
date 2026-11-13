@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '../components/layout/Header';
 import { UserService, type UserDTO, type TabPermission } from '../services/UserService';
+import { Pagination } from '../components/common/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 interface UserManagementSettingPageProps {
   onLogout?: () => void;
@@ -96,7 +98,7 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
         department: department,
         role: isAdmin ? ('ADMIN' as const) : ('USER' as const),
         status: 'Hoạt động' as const,
-        password: password || '123456',
+        password: password || '',
         permissions: permissions,
       };
 
@@ -179,6 +181,9 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
     u.fullName.toLowerCase().includes(searchKeyword.toLowerCase()) ||
     u.email.toLowerCase().includes(searchKeyword.toLowerCase())
   );
+  
+
+  
 
   return (
     <div className="bg-light min-vh-100 font-sans">
@@ -240,6 +245,8 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
                       <label className="form-label small text-muted fw-bold">Mã nhân viên</label>
                       <input 
                         type="text" 
+                        name="new_emp_code"
+                        autoComplete="off"
                         className="form-control" 
                         placeholder="VD: VN2612246"
                         value={employeeCode} 
@@ -250,6 +257,8 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
                       <label className="form-label small text-muted fw-bold">Họ và tên</label>
                       <input 
                         type="text" 
+                        name="new_emp_fullname"
+                        autoComplete="off"
                         className="form-control" 
                         placeholder="VD: Nguyễn Văn A" 
                         value={fullName}
@@ -260,6 +269,8 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
                       <label className="form-label small text-muted fw-bold">Email</label>
                       <input 
                         type="email" 
+                        name="new_emp_email"
+                        autoComplete="off"
                         className="form-control" 
                         placeholder="VD: nva@company.com" 
                         value={email}
@@ -270,6 +281,10 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
                       <label className="form-label small text-muted fw-bold">Phòng ban (*)</label>
                       <input 
                         type="text" 
+                        name="new_emp_dept"
+                        autoComplete="off"
+                        readOnly
+                        onFocus={(e) => e.currentTarget.removeAttribute('readonly')}
                         className="form-control" 
                         list="departmentOptions"
                         placeholder="Chọn hoặc tự gõ phòng ban" 
@@ -293,6 +308,10 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
                       <label className="form-label small text-muted fw-bold">Mật khẩu</label>
                       <input 
                         type="password" 
+                        name="new_emp_password"
+                        autoComplete="new-password"
+                        readOnly
+                        onFocus={(e) => e.currentTarget.removeAttribute('readonly')}
                         className="form-control"
                         placeholder="Tối thiểu 6 ký tự" 
                         value={password}

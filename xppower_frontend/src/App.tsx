@@ -37,7 +37,9 @@ function App() {
 
   const handleLogout = () => {
     AuthService.logout();
-    sessionStorage.removeItem('currentTab');
+    // Xóa token hoặc thông tin đăng nhập đã lưu
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setCurrentTab('dashboard');
     setIsLoggedIn(false);
     setHasLoggedOut(true);
@@ -86,7 +88,7 @@ function App() {
       )}
       {/* Thêm điều kiện render trang Cài Đặt (UserManagementSettingPage) */}
       {currentTab === 'settings' && (
-        <UserManagementSettingPage />
+        <UserManagementSettingPage onLogout={handleLogout} onTabChange={handleTabChange} />
       )}
     </div>
   );

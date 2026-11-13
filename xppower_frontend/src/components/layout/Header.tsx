@@ -16,7 +16,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const currentUsername = username || localStorage.getItem('username') || 'Admin';
+  const currentUsername = username || sessionStorage.getItem('username') || 'Admin';
   const firstLetter = currentUsername.charAt(0).toUpperCase();
 
   useEffect(() => {
