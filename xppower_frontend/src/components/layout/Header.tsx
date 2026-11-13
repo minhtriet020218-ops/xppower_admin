@@ -3,8 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 interface HeaderProps {
   username?: string;
   onLogout?: () => void;
-  activeTab?: 'dashboard' | 'assets' | 'department' | 'settings';
-  onTabChange?: (tab: 'dashboard' | 'assets' | 'department' | 'settings') => void;
+  activeTab?: 'dashboard' | 'assets' | 'department' | 'personal' | 'settings';
+  onTabChange?: (tab: 'dashboard' | 'assets' | 'department' | 'personal' | 'settings') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -66,7 +66,12 @@ export const Header: React.FC<HeaderProps> = ({
             >
               🏛 Bộ phận
             </span>
-            <span className="px-3 py-1">Trang cá nhân</span>
+            <span 
+              onClick={() => onTabChange && onTabChange('personal')}
+              className={`px-3 py-1 rounded-pill fw-bold ${activeTab === 'personal' ? 'bg-light text-dark shadow-sm' : 'text-secondary'}`}
+            >
+              Trang cá nhân
+            </span>
             
             {/* Gắn sự kiện chuyển sang trang Settings */}
             <span 
@@ -105,6 +110,17 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                   <div className="fw-bold text-dark">{currentUsername}</div>
                   <div className="text-muted small" style={{ fontSize: '12px' }}>Admin</div>
+                </li>
+                <li>
+                  <button 
+                    className="dropdown-item rounded py-2 small fw-bold d-flex align-items-center gap-2 w-100 border-0 bg-transparent text-start" 
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      if (onTabChange) onTabChange('personal');
+                    }}
+                  >
+                    🙍 Trang cá nhân
+                  </button>
                 </li>
                 <li>
                   <button 

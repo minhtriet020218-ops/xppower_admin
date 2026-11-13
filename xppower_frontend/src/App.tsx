@@ -5,6 +5,7 @@ import { AssetManagementPage } from './pages/AssetManagementPage';
 import { AuthService } from './services/AuthService';
 import { DepartmentPage } from './pages/DepartmentPage';
 import { UserManagementSettingPage } from './pages/UserManagementSettingPage'; // Import trang Cài đặt
+import { PersonalPage } from './pages/PersonalPage'; // Import Trang cá nhân
 
 const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 phút
 
@@ -15,15 +16,15 @@ function App() {
   const [hasLoggedOut, setHasLoggedOut] = useState<boolean>(false);
 
   // Thêm 'settings' vào union type của currentTab
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'assets' | 'department' | 'settings'>(() => {
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'assets' | 'department' | 'personal' | 'settings'>(() => {
     if (!AuthService.isAuthenticated()) return 'dashboard';
     const savedTab = sessionStorage.getItem('currentTab');
-    return (savedTab === 'assets' || savedTab === 'dashboard' || savedTab === 'department' || savedTab === 'settings') ? savedTab : 'dashboard';
+    return (savedTab === 'assets' || savedTab === 'dashboard' || savedTab === 'department' || savedTab === 'personal' || savedTab === 'settings') ? savedTab : 'dashboard';
   });
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleTabChange = (tab: 'dashboard' | 'assets' | 'department' | 'settings') => {
+  const handleTabChange = (tab: 'dashboard' | 'assets' | 'department' | 'personal' | 'settings') => {
     setCurrentTab(tab);
     sessionStorage.setItem('currentTab', tab);
   };
@@ -85,6 +86,9 @@ function App() {
       )}
       {currentTab === 'department' && (
         <DepartmentPage onLogout={handleLogout} onTabChange={handleTabChange} />
+      )}
+      {currentTab === 'personal' && (
+        <PersonalPage onLogout={handleLogout} onTabChange={handleTabChange} />
       )}
       {/* Thêm điều kiện render trang Cài Đặt (UserManagementSettingPage) */}
       {currentTab === 'settings' && (

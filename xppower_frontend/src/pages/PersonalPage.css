@@ -1,0 +1,77 @@
+/* Trang cá nhân: bố cục 3 cột (thiết bị | lịch chấm công | xin phép) */
+.pp-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (min-width: 1200px) {
+  .pp-layout { grid-template-columns: 360px minmax(0, 1fr) 380px; }
+}
+
+.pp-panel { background: #fff; border-radius: 16px; border: 1px solid #dbe4f0; }
+.pp-panel-blue { border-color: #3b82f6; }
+.pp-panel-green { border-color: #22c55e; }
+.pp-panel-head { padding: 14px 18px; font-weight: 700; border-bottom: 1px solid #e5e7eb; border-radius: 16px 16px 0 0; }
+.pp-panel-blue .pp-panel-head { color: #1d4ed8; background: #eff6ff; }
+.pp-panel-green .pp-panel-head { color: #166534; background: #f0fdf4; }
+.pp-panel-body { padding: 16px 18px; }
+
+/* ---- Lịch chấm công ---- */
+.pp-cal { background: #f4f7fc; border-radius: 20px; padding: 18px; }
+.pp-cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.pp-cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: #6b7280; padding: 6px 0; text-transform: none; }
+.pp-cal-dow.is-sun { color: #dc2626; }
+.pp-cal-dow.is-sat { color: #9ca3af; }
+
+.pp-cell {
+  min-height: 108px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid transparent;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+.pp-cell.is-blank { background: transparent; box-shadow: none; }
+.pp-cell.is-weekend { background: #f9fafb; box-shadow: none; }
+.pp-cell.is-today { border: 2px solid #2563eb; }
+.pp-cell-day { font-size: 12px; font-weight: 700; color: #6b7280; }
+.pp-cell.is-today .pp-cell-day { color: #1d4ed8; }
+
+.pp-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 700; color: #fff;
+  padding: 2px 8px; border-radius: 8px; width: fit-content;
+}
+.pp-badge-in { background: #16a34a; }
+.pp-badge-out { background: #2563eb; }
+.pp-badge-missing { background: #f59e0b; color: #fff; }
+
+.pp-sum { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 13px; color: #374151; }
+.pp-sum b { color: #111827; }
+
+@media (max-width: 767px) {
+  .pp-cal { padding: 10px; }
+  .pp-cal-grid { gap: 4px; }
+  .pp-cell { min-height: 72px; padding: 4px; }
+  .pp-badge { font-size: 10px; padding: 1px 4px; }
+}
+
+/* ---- Thẻ thiết bị ---- */
+.pp-asset { border: 1px solid #3b82f6; border-radius: 12px; padding: 12px 14px; background: #fff; }
+.pp-asset + .pp-asset { margin-top: 10px; }
+.pp-asset-meta { font-size: 12px; color: #4b5563; line-height: 1.6; }
+
+/* ---- Modal đơn giản dùng class Bootstrap ---- */
+.pp-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 1060; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.pp-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; }
+
+/* ---- Thông báo nổi ---- */
+.pp-toast { position: fixed; top: 76px; right: 20px; z-index: 1070; max-width: 360px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pp-layout * { transition: none !important; }
+}

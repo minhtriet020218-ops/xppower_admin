@@ -7,9 +7,17 @@ const fs = require('fs');
 const crypto = require('crypto');
 const staffController = require('./staffController');
 const userController = require('./userController');
+const { signToken, requireAuth, requireAdmin, createLimiter, safeEqual } = require('./authToken');
+const { initPersonalTables } = require('./personalDb');
+const personalController = require('./personalController');
+const attendanceController = require('./attendanceController');
 
 const app = express();
 const PORT = 8080;
+
+// Tin header X-Forwarded-For chỉ khi request đến từ chính máy này (cloudflared/nginx chạy cùng máy)
+app.set('trust proxy', 'loopback');
+const loginLimiter = createLimiter({ max: 10, windowMs: 15 * 60 * 1000 });
 
 app.use(cors());
 app.use(express.json());
@@ -230,24 +238,33 @@ app.get('/api/v1/health', (req, res) => res.json({ status: 'ok', imageUpload: tr
  * 1. API Đăng nhập
  */
 app.post('/api/v1/auth/login', async (req, res) => {
-  const { username, passwordHash } = req.body;
+  const { username, passwordHash } = req.body || {};
+  const limitKey = `${req.ip}|${String(username).toLowerCase()}`;
+  if (loginLimiter.isBlocked(limitKey)) {
+    return res.status(429).json({ message: `Đăng nhập sai quá nhiều lần. Thử lại sau ${Math.ceil(loginLimiter.retryAfterSec(limitKey) / 60)} phút.` });
+  }
   try {
     // Truy vấn tìm user trong database
     const result = await pool.query('SELECT * FROM users WHERE username = $1 AND status = $2', [username, 'Hoạt động']);
     
     if (result.rows.length === 0) {
+      loginLimiter.fail(limitKey);
       return res.status(401).json({ message: 'Tên đăng nhập không tồn tại hoặc tài khoản đã bị khóa!' });
     }
 
     const user = result.rows[0];
 
     // Kiểm tra mật khẩu (có thể so sánh trực tiếp hoặc qua mã hóa tùy hệ thống của bạn)
-    if (user.password_hash !== passwordHash && passwordHash !== '123456') { // Cho phép mật khẩu 123456 hoặc password_hash trong db
+    // Đã BỎ ngoại lệ "mật khẩu 123456 vào được mọi tài khoản" (lỗ hổng nghiêm trọng khi đưa server ra internet).
+    // Tài khoản có mật khẩu mặc định 123456 trong DB vẫn đăng nhập được vì khớp chính xác.
+    if (!safeEqual(user.password_hash, passwordHash)) {
+      loginLimiter.fail(limitKey);
       return res.status(401).json({ message: 'Mật khẩu không chính xác!' });
     }
+    loginLimiter.reset(limitKey);
 
     return res.status(200).json({
-      token: 'mock_jwt_token_' + user.username + '_xyz987',
+      token: signToken(user), // token có chữ ký HMAC, hết hạn sau 12 giờ
       username: user.username,
       fullName: user.full_name,
       role: user.role
@@ -257,6 +274,9 @@ app.post('/api/v1/auth/login', async (req, res) => {
     return res.status(500).json({ message: 'Lỗi server khi đăng nhập' });
   }
 });
+
+// 🔒 Từ đây trở xuống mọi API /api/v1 đều bắt buộc có token hợp lệ.
+app.use('/api/v1', requireAuth);
 
 // Map dòng DB (snake_case) sang DTO của Frontend (camelCase)
 const mapAssetRow = (row) => ({
@@ -595,10 +615,41 @@ app.put('/api/v1/staff/:id', staffController.updateStaff);
 app.delete('/api/v1/staff/:id', staffController.deleteStaff);
 
 // --- CÁC API ROUTE CHO QUẢN LÝ NGƯỜI DÙNG (USER MANAGEMENT) ---
-app.get('/api/v1/users', userController.getUsers);
-app.post('/api/v1/users', userController.createUser);
-app.put('/api/v1/users/:id', userController.updateUser);
-app.delete('/api/v1/users/:id', userController.deleteUser);
+app.get('/api/v1/users', requireAdmin, userController.getUsers);
+app.post('/api/v1/users', requireAdmin, userController.createUser);
+app.put('/api/v1/users/:id', requireAdmin, userController.updateUser);
+app.delete('/api/v1/users/:id', requireAdmin, userController.deleteUser);
+
+// --- TRANG CÁ NHÂN ---
+initPersonalTables();
+app.get('/api/v1/personal/me', personalController.getMe);
+app.get('/api/v1/personal/assets', personalController.getMyAssets);
+app.get('/api/v1/personal/attendance', personalController.getAttendance);
+app.get('/api/v1/personal/leave-requests', personalController.getLeaveRequests);
+app.post('/api/v1/personal/leave-requests', personalController.createLeaveRequest);
+app.get('/api/v1/personal/shift-changes', personalController.getShiftChanges);
+app.post('/api/v1/personal/shift-changes', personalController.createShiftChange);
+app.get('/api/v1/personal/meal-orders', personalController.getMealOrders);
+app.post('/api/v1/personal/meal-orders', personalController.createMealOrder);
+
+// --- CHẤM CÔNG BẰNG VÂN TAY (WebAuthn) ---
+app.get('/api/v1/attendance/status', attendanceController.getStatus);
+app.post('/api/v1/attendance/passkey/register/options', attendanceController.registerOptions);
+app.post('/api/v1/attendance/passkey/register/verify', attendanceController.registerVerify);
+app.post('/api/v1/attendance/punch/options', attendanceController.punchOptions);
+app.post('/api/v1/attendance/punch/verify', attendanceController.punchVerify);
+app.delete('/api/v1/attendance/passkeys/:username', requireAdmin, attendanceController.resetPasskeys);
+
+// --- PHỤC VỤ GIAO DIỆN ĐÃ BUILD (npm run build) CÙNG MỘT ĐỊA CHỈ VỚI API ---
+// Nhờ vậy chỉ cần mở 1 cổng ra internet và điện thoại dùng chung 1 địa chỉ HTTPS (cần cho vân tay).
+const FRONTEND_DIST = path.join(__dirname, '..', 'xppower_frontend', 'dist');
+if (fs.existsSync(path.join(FRONTEND_DIST, 'index.html'))) {
+  app.use(express.static(FRONTEND_DIST));
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' || req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) return next();
+    res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend server & PostgreSQL đang chạy tại: http://localhost:${PORT}`);
