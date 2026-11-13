@@ -39,7 +39,6 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
   const [users, setUsers] = useState<UserDTO[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [rowsPerPage, setRowsPerPage] = useState(20);
 
   // --- 🛠️ STATE QUẢN LÝ MODAL EDIT USER ---
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -179,11 +178,23 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
   const filteredUsers = users.filter(u => 
     u.username.toLowerCase().includes(searchKeyword.toLowerCase()) ||
     u.fullName.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchKeyword.toLowerCase())
+    (u.email || '').toLowerCase().includes(searchKeyword.toLowerCase())
   );
-  
 
-  
+  // Tích hợp hook usePagination (mặc định 20 dòng/trang)
+  const {
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    setItemsPerPage,
+    paginatedItems: paginatedUsers,
+    totalItems,
+  } = usePagination(filteredUsers, 20);
+
+  // Reset về trang 1 khi thay đổi từ khóa tìm kiếm
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchKeyword, setCurrentPage]);
 
   return (
     <div className="bg-light min-vh-100 font-sans">
@@ -386,7 +397,7 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
 
               {/* BẢNG HIỂN THỊ DANH SÁCH USER TỪ DATABASE */}
               <div className="card border-0 shadow-sm p-4 rounded-4 bg-white">
-                <h5 className="fw-bold mb-3 text-dark">Danh sách người dùng ({filteredUsers.length})</h5>
+                <h5 className="fw-bold mb-3 text-dark">Danh sách người dùng ({totalItems})</h5>
 
                 <div className="row g-3 align-items-center mb-4">
                   <div className="col-md-5">
@@ -404,8 +415,11 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
                     <span className="small text-muted">Hiển thị</span>
                     <select 
                       className="form-select form-select-sm w-auto" 
-                      value={rowsPerPage}
-                      onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
                     >
                       <option value={10}>10</option>
                       <option value={20}>20</option>
@@ -435,12 +449,12 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
                             <div className="spinner-border spinner-border-sm text-primary" role="status"></div> Đang tải dữ liệu từ Database...
                           </td>
                         </tr>
-                      ) : filteredUsers.length === 0 ? (
+                      ) : paginatedUsers.length === 0 ? (
                         <tr>
                           <td colSpan={7} className="text-center py-4 text-muted">Không tìm thấy người dùng nào trong cơ sở dữ liệu.</td>
                         </tr>
                       ) : (
-                        filteredUsers.slice(0, rowsPerPage).map((u) => (
+                        paginatedUsers.map((u) => (
                           <tr key={u.id}>
                             <td className="py-3 px-3 fw-semibold text-primary">{u.username}</td>
                             <td className="py-3 px-3 fw-bold">{u.fullName}</td>
@@ -466,6 +480,19 @@ export const UserManagementSettingPage: React.FC<UserManagementSettingPageProps>
                     </tbody>
                   </table>
                 </div>
+
+                {/* COMPONENT PHÂN TRANG */}
+                {!isLoading && (
+                  <Pagination
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    currentPage={currentPage}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                    pageSizeOptions={[10, 20, 50]}
+                    itemName="người dùng"
+                  />
+                )}
               </div>
             </>
           )}
