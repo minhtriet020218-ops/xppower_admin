@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const staffController = require('./staffController');
-const userRoutes = require('./userController');
+const userController = require('./userController');
 
 const app = express();
 const PORT = 8080;
